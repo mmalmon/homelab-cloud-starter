@@ -1,0 +1,82 @@
+name: immich
+
+services:
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-v3}
+    container_name: immich-server
+    restart: unless-stopped
+    depends_on:
+      - immich-redis
+      - immich-database
+    ports:
+      - "127.0.0.1:${IMMICH_PORT:-2283}:2283"
+    environment:
+      DB_HOSTNAME: immich-database
+      DB_PORT: "5432"
+      DB_USERNAME: ${IMMICH_DB_USERNAME:-postgres}
+      DB_PASSWORD: ${IMMICH_DB_PASSWORD:?Set IMMICH_DB_PASSWORD in .env}
+      DB_DATABASE_NAME: ${IMMICH_DB_DATABASE_NAME:-immich}
+      REDIS_HOSTNAME: immich-redis
+      VIRTUAL_HOST: ${IMMICH_HOST:-}
+      VIRTUAL_PORT: "2283"
+      LETSENCRYPT_HOST: ${IMMICH_TLS_HOST:-}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-}
+      TZ: ${TZ:-Etc/UTC}
+    volumes:
+      - ${IMMICH_UPLOAD_LOCATION:-./data/library}:/data
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - immich
+      - proxy
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-v3}
+    container_name: immich-machine-learning
+    restart: unless-stopped
+    volumes:
+      - model-cache:/cache
+    environment:
+      TZ: ${TZ:-Etc/UTC}
+    networks:
+      - immich
+
+  immich-redis:
+    image: docker.io/valkey/valkey:9
+    container_name: immich-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks:
+      - immich
+
+  immich-database:
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0
+    container_name: immich-database
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${IMMICH_DB_PASSWORD:?Set IMMICH_DB_PASSWORD in .env}
+      POSTGRES_USER: ${IMMICH_DB_USERNAME:-postgres}
+      POSTGRES_DB: ${IMMICH_DB_DATABASE_NAME:-immich}
+      POSTGRES_INITDB_ARGS: --data-checksums
+    volumes:
+      - ${IMMICH_DB_DATA_LOCATION:-./data/postgres}:/var/lib/postgresql/data
+    shm_size: 128mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --dbname=\"$${POSTGRES_DB}\" --username=\"$${POSTGRES_USER}\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - immich
+
+networks:
+  immich:
+  proxy:
+    external: true
+    name: homelab-proxy
+
+volumes:
+  model-cache:

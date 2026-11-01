@@ -1,0 +1,26 @@
+name: euro-office
+
+services:
+  documentserver:
+    image: ghcr.io/euro-office/documentserver:9.3.1
+    container_name: euro-office
+    restart: unless-stopped
+    environment:
+      JWT_ENABLED: "true"
+      JWT_SECRET: ${EURO_OFFICE_JWT_SECRET:?Set EURO_OFFICE_JWT_SECRET in .env}
+      ALLOW_PRIVATE_IP_ADDRESS: ${ALLOW_PRIVATE_IP_ADDRESS:-false}
+      VIRTUAL_HOST: ${EURO_OFFICE_HOST:-}
+      VIRTUAL_PORT: "80"
+      LETSENCRYPT_HOST: ${EURO_OFFICE_TLS_HOST:-}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-}
+    volumes:
+      - ./data/documentserver:/var/lib/euro-office/documentserver
+      - ./data/private:/var/www/euro-office/Data
+      - ./data/logs:/var/log/euro-office/documentserver
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
+    name: homelab-proxy

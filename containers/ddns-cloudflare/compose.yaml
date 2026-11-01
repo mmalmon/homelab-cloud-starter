@@ -1,0 +1,16 @@
+name: homelab-ddns
+
+services:
+  cloudflare-ddns:
+    image: favonia/cloudflare-ddns:1
+    container_name: cloudflare-ddns
+    restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:?Set CLOUDFLARE_API_TOKEN in .env}
+      DOMAINS: ${DOMAINS:?Set DOMAINS in .env}
+      PROXIED: "false"

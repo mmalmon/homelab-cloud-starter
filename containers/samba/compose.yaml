@@ -1,0 +1,15 @@
+name: samba
+
+services:
+  samba:
+    image: ghcr.io/servercontainers/samba:smbd-only-latest
+    container_name: samba
+    restart: unless-stopped
+    ports:
+      - "${SMB_BIND_ADDRESS:-127.0.0.1}:445:445"
+    environment:
+      ACCOUNT_media: ${SAMBA_PASSWORD:?Set SAMBA_PASSWORD in .env}
+      UID_media: ${SAMBA_UID:-1000}
+      SAMBA_VOLUME_CONFIG_media: "path = /shares/media; read only = no; guest ok = no; valid users = media"
+    volumes:
+      - ${MEDIA_ROOT:-/mnt/raid/Library}:/shares/media
