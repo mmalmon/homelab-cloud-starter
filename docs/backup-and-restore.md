@@ -1,7 +1,7 @@
 # Kopia zapasowa i odtwarzanie
 
 Kopia powinna obejmować bazę danych **i** pliki aplikacji. Synchronizacja do
-t tego samego dysku nie jest kopią zapasową; trzymaj co najmniej jedną kopię na
+t ego samego dysku nie jest kopią zapasową; trzymaj co najmniej jedną kopię na
 innym nośniku lub w innej lokalizacji. Regularnie sprawdzaj, czy da się ją
 odtworzyć.
 
