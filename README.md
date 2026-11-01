@@ -46,7 +46,7 @@ Otwórz <http://localhost:8080>. Konto administratora powstaje z wartości
 serwera do `NEXTCLOUD_TRUSTED_DOMAINS` i rozważ reverse proxy. Jeśli
 publikujesz port bezpośrednio, ustaw `BIND_ADDRESS` na adres LAN serwera,
 nie na `0.0.0.0`, i pamiętaj, że porty Dockera mogą omijać reguły UFW.
-Przeczytaj [poradnik firewalla](docs/ubuntu-docker-cockpit.md#3-ufw--firewall-hosta)
+Przeczytaj [poradnik firewalla](docs/ubuntu-docker-cockpit.md#3-firewall-ufw)
 i sprawdź dostęp z innego urządzenia. Nigdy nie przekierowuj portu 8080
 bezpośrednio z Internetu.
 
