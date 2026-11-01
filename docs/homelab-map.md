@@ -27,9 +27,61 @@ odbudowy. Zobacz [opis RAID i kopii zapasowych](storage-and-raid.md).
 
 | Rola | Usługa / komponent | Zasady i źródła |
 |---|---|---|
-| Reverse proxy | `nginx-proxy` | [Repozytorium nginx-proxy](https://github.com/nginx-proxy/nginx-proxy); kieruje hosty/domeny do usług webowych. Wystawiaj tylko zaplanowane porty HTTP/HTTPS. |
+| Reverse proxy | Kontener `nginx-proxy` | [Repozytorium nginx-proxy](https://github.com/nginx-proxy/nginx-proxy); przyjmuje żądania HTTP/HTTPS i na podstawie domeny/subdomeny kieruje je do właściwego kontenera aplikacji. Wystawiaj tylko zaplanowane porty HTTP/HTTPS. |
 | Certyfikaty | Let's Encrypt przez ACME | Certyfikaty można zautomatyzować przez [acme-companion](https://github.com/nginx-proxy/acme-companion) dla nginx-proxy albo konfigurować osobno przez [Certbot](https://certbot.eff.org/). Wybierz jeden spójny mechanizm zarządzania certyfikatami i odnowieniami. |
-| DNS i router | Domena, rekordy DNS, NAT | Publikuj tylko niezbędne porty. Nie wystawiaj Cockpit, SSH, SMB, MQTT, paneli administracyjnych ani baz danych do Internetu. |
+| DNS i router | Domena, rekordy DNS, NAT | Rekord DNS wskazuje domenę/subdomenę na adres serwera; dopiero `nginx-proxy` wybiera kontener docelowy. Publikuj tylko niezbędne porty. Nie wystawiaj Cockpit, SSH, SMB, MQTT, paneli administracyjnych ani baz danych do Internetu. |
+
+### Stały publiczny adres IP lub DDNS
+
+Zarówno stały publiczny adres IP, jak i DDNS mogą prowadzić do tego samego
+układu z reverse proxy:
+
+- **Stały publiczny adres IP:** rekord `A` domeny wskazuje na publiczny IPv4
+  serwera/routera. Jeśli używasz publicznego IPv6, rekord `AAAA` wskazuje
+  właściwy adres, a firewall IPv6 musi zezwalać tylko na potrzebny ruch.
+  Stały adres ułatwia konfigurację DNS, ale sam nie otwiera dostępu.
+- **Dynamiczny publiczny adres IP:** router lub klient DDNS na stale
+  działającym urządzeniu wykrywa zmianę adresu i aktualizuje rekord DNS.
+  Możesz użyć nazwy od dostawcy DDNS albo własnej domeny, jeśli operator
+  DNS pozwala aktualizować jej rekordy/API. Chroń dane logowania/API klienta
+  DDNS i nadaj im możliwie ograniczone uprawnienia.
+
+W obu wariantach domena rozwiązuje się do adresu routera/serwera, a dopiero
+potem router przekazuje wymagane porty do hosta i `nginx-proxy` routuje
+żądanie do kontenera aplikacji. DDNS aktualizuje wyłącznie powiązanie nazwy
+z adresem IP — **nie** konfiguruje przekierowania portów, firewalla, TLS ani
+samego reverse proxy.
+
+DDNS nie omija **CGNAT** ani blokady ruchu przychodzącego przez dostawcę
+Internetu. Jeśli router nie ma własnego, osiągalnego publicznego adresu
+(adres WAN może być prywatny lub z zakresu współdzielonego), zwykłe
+przekierowanie portów może nie działać. Zapytaj ISP o publiczny IPv4,
+skorzystaj z publicznego IPv6, jeśli sieć i klienci go obsługują, albo użyj
+VPN/tunelu zewnętrznego. Zweryfikuj osiągalność z sieci zewnętrznej, a nie
+tylko przez Wi-Fi w domu.
+
+Źródła: [jak działa DDNS (No-IP)](https://www.noip.com/support/knowledgebase/what-is-dynamic-dns),
+[aktualizacja dynamicznych rekordów DNS (Cloudflare)](https://developers.cloudflare.com/dns/manage-dns-records/how-to/managing-dynamic-ip-addresses/).
+
+Przepływ wygląda w uproszczeniu tak:
+
+```text
+cloud.example.net
+       │ DNS wskazuje adres serwera
+       ▼
+serwer:80/443 → kontener nginx-proxy
+                    │ nagłówek Host / skonfigurowana domena
+                    ▼
+              kontener Nextcloud
+```
+
+W wariancie [`nginx-proxy`](https://github.com/nginx-proxy/nginx-proxy)
+kontenery aplikacji dołączają do wspólnej sieci Docker z proxy i deklarują
+obsługiwaną nazwę hosta (zwykle przez `VIRTUAL_HOST`). Kontener proxy
+obserwuje metadane Dockera i generuje routing do właściwej usługi. To nie
+jest serwer DNS: rekordy domeny, dostępność portów na routerze oraz reguły
+firewalla trzeba skonfigurować oddzielnie. Szczegóły zmiennych i sieci
+sprawdź w [dokumentacji nginx-proxy](https://github.com/nginx-proxy/nginx-proxy#usage).
 
 Jeśli walidacja certyfikatu wymaga HTTP-01, port 80 musi być osiągalny podczas
 walidacji; nie blokuj go pochopnie. TLS nie zastępuje aktualizacji, mocnych

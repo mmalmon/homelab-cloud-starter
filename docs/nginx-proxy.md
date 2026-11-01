@@ -19,7 +19,8 @@ W typowej konfiguracji z projektem
 [`nginx-proxy`](https://github.com/nginx-proxy/nginx-proxy) wygląda to tak:
 
 1. Rekord DNS `A` (i w razie potrzeby `AAAA`) wskazuje na publiczny adres
-   serwera. Dla dostępu tylko z LAN można użyć lokalnego DNS.
+   serwera. Może to być adres stały albo dynamiczny aktualizowany przez usługę
+   DDNS; dla dostępu tylko z LAN można użyć lokalnego DNS.
 2. Router i firewall dopuszczają wybrane porty HTTP/HTTPS do hosta. Zwykle
    porty `80` i `443` są publikowane przez kontener proxy; nie publikuj
    bezpośrednio portów aplikacji, baz danych ani paneli administracyjnych.
@@ -34,6 +35,23 @@ W typowej konfiguracji z projektem
 Nie musisz wystawiać portu każdej aplikacji na hosta, jeśli proxy może
 połączyć się z nią w sieci Docker. Szczegóły konfiguracji, sieci, zmiennych
 i wymagań obrazu sprawdź w [oficjalnym README nginx-proxy](https://github.com/nginx-proxy/nginx-proxy#usage).
+
+## Publiczny stały adres IP i DDNS
+
+Przy **stałym publicznym IP** ustaw rekord `A` własnej domeny na publiczny
+IPv4, a w razie używania IPv6 również poprawny rekord `AAAA`. Jeśli adres jest
+dynamiczny, router albo klient DDNS może aktualizować wskazany rekord po
+zmianie IP. Możesz użyć nazwy od dostawcy DDNS lub własnej domeny obsługującej
+automatyczne aktualizacje DNS. Przykładowe wyjaśnienia i rozwiązania opisują
+[No-IP](https://www.noip.com/support/knowledgebase/what-is-dynamic-dns) oraz
+[Cloudflare](https://developers.cloudflare.com/dns/manage-dns-records/how-to/managing-dynamic-ip-addresses/).
+
+DDNS tylko utrzymuje aktualne mapowanie nazwy na IP — nie konfiguruje routera,
+nie otwiera portów i nie zastępuje `nginx-proxy` ani certyfikatów. Dla ruchu
+przychodzącego nadal potrzebujesz publicznie osiągalnego adresu i właściwych
+reguł routera/firewalla. Przy CGNAT zwykłe przekierowanie portów często nie
+zadziała; poproś ISP o publiczny adres albo użyj VPN/tunelu. Sprawdź dostęp
+z sieci poza domem i nie wystawiaj paneli administracyjnych.
 
 ## HTTPS i certyfikaty
 
