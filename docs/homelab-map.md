@@ -3,8 +3,9 @@
 Pełny homelab to nie tylko Nextcloud i Immich. Obejmuje host i pamięć masową,
 sieć wejściową, chmurę, automatykę, multimedia, stronę WWW, udostępnianie
 plików, gry oraz utrzymanie. Główny `compose.yaml` uruchamia Nextcloud,
-a Immich jest profilem opcjonalnym. Przykładowe, niezależne pliki Compose dla
-pozostałych usług znajdują się w [`stacks/`](../stacks/). Nie uruchamiaj
+a Immich jest profilem opcjonalnym. Kreator korzysta z aktualnych konfiguracji
+w [`containers/`](../containers/); starsze, ręczne przykłady są w
+[`stacks/`](../stacks/). Nie uruchamiaj obu układów jednocześnie ani
 wszystkiego naraz bez dostosowania ścieżek, sekretów, urządzeń i reguł sieci.
 
 ## Host, administracja i dane

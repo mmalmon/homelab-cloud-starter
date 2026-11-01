@@ -131,7 +131,7 @@ Dodaj klucz i repozytorium:
 sudo apt update
 sudo apt install ca-certificates curl
 sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \\
   -o /etc/apt/keyrings/docker.asc
 sudo chmod a+r /etc/apt/keyrings/docker.asc
 
@@ -191,6 +191,41 @@ sudo ufw status verbose
 sudo docker compose ps
 ```
 
+## 7. Dyski z danymi i RAID
+
+W opisywanym homelabie dyski przechowujące dane są połączone w macierz RAID,
+żeby ograniczyć przestój i utratę dostępności w razie awarii dysku. To opis
+układu tego serwera, a nie wymaganie dla każdego czytelnika. Sam punkt
+montowania lub system plików (na przykład ext4) nie mówi, czy pod spodem jest
+RAID ani jaki to poziom.
+
+Dokładny poziom macierzy, urządzenia i odporność na awarie trzeba sprawdzić
+na danym hoście przed planowaniem zmian:
+
+```bash
+lsblk -o NAME,SIZE,FSTYPE,TYPE,MOUNTPOINTS
+cat /proc/mdstat
+sudo mdadm --detail --scan
+```
+
+`mdadm` dotyczy programowego RAID Linux; sprzętowy RAID lub rozwiązania ZFS
+sprawdza się innymi narzędziami. Jeśli `mdadm --detail --scan` zwróci
+urządzenie, szczegóły konkretnej macierzy można odczytać poleceniem
+`sudo mdadm --detail /dev/mdX`, zastępując `/dev/mdX` nazwą z wyniku.
+Nie uruchamiaj poleceń `mdadm --create`, formatowania ani partycjonowania
+na dyskach z danymi: błędne polecenie może zniszczyć macierz i pliki.
+
+RAID1 lustrzany, RAID5, RAID6 i RAID10 mają różną pojemność i odporność na
+awarie; nie ma jednego poziomu właściwego dla każdego zestawu dysków. Przy
+wyborze uwzględnij liczbę i rozmiar dysków, czas odbudowy, obciążenie oraz
+scenariusz jednoczesnych awarii. Monitoruj stan macierzy i SMART, reaguj na
+błędy, utrzymuj aktualny plan wymiany dysku, a jeśli to możliwe użyj UPS.
+
+**RAID nie zastępuje kopii zapasowej.** Nie chroni przed przypadkowym
+skasowaniem lub nadpisaniem, ransomware, kradzieżą, pożarem, awarią hosta ani
+uszkodzeniem całej macierzy. Kopię ważnych danych trzymaj na niezależnym
+nośniku lub poza lokalizacją serwera i regularnie testuj odtwarzanie.
+
 Przed wdrożeniem usług z tego repozytorium przejdź do [szybkiego startu](../README.md#szybki-start-nextcloud)
 i przeczytaj [zasady bezpieczeństwa](security.md).
 
@@ -202,3 +237,4 @@ i przeczytaj [zasady bezpieczeństwa](security.md).
 - [Docker: filtrowanie pakietów i firewalle](https://docs.docker.com/engine/network/packet-filtering-firewalls/)
 - [Docker: kroki po instalacji](https://docs.docker.com/engine/install/linux-postinstall/)
 - [Cockpit: instalacja i konfiguracja](https://cockpit-project.org/running.html)
+- [mdadm — dokumentacja pakietu Ubuntu](https://manpages.ubuntu.com/manpages/noble/man8/mdadm.8.html)
