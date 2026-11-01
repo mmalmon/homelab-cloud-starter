@@ -16,6 +16,9 @@ Konfiguracja jest szablonem: nie zawiera ustawień konkretnego serwera, prywatny
 
 ## Szybki start: Nextcloud
 
+Przygotowujesz nowy serwer? Zacznij od poradnika
+[Ubuntu Server + Docker + Cockpit + firewall](docs/ubuntu-docker-cockpit.md).
+
 ```bash
 git clone https://github.com/mmalmon/homelab-cloud-starter.git
 cd homelab-cloud-starter
