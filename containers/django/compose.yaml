@@ -1,0 +1,49 @@
+name: django
+
+services:
+  django-db:
+    image: postgres:16.10-alpine
+    container_name: django-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: django
+      POSTGRES_USER: django
+      POSTGRES_PASSWORD: ${DJANGO_DB_PASSWORD:?Set DJANGO_DB_PASSWORD in .env}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U django -d django"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - django
+
+  django:
+    build: .
+    container_name: django
+    restart: unless-stopped
+    depends_on:
+      django-db:
+        condition: service_healthy
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in .env}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_HOST:-localhost}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-}
+      DJANGO_DB_HOST: django-db
+      DJANGO_DB_PASSWORD: ${DJANGO_DB_PASSWORD:?Set DJANGO_DB_PASSWORD in .env}
+      VIRTUAL_HOST: ${DJANGO_HOST:-}
+      VIRTUAL_PORT: "8000"
+      LETSENCRYPT_HOST: ${DJANGO_TLS_HOST:-}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-}
+    volumes:
+      - ./data/media:/app/media
+    networks:
+      - django
+      - proxy
+
+networks:
+  django:
+  proxy:
+    external: true
+    name: homelab-proxy

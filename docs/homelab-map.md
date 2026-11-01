@@ -2,11 +2,8 @@
 
 Pełny homelab to nie tylko Nextcloud i Immich. Obejmuje host i pamięć masową,
 sieć wejściową, chmurę, automatykę, multimedia, stronę WWW, udostępnianie
-plików, gry oraz utrzymanie. Główny `compose.yaml` uruchamia Nextcloud,
-a Immich jest profilem opcjonalnym. Kreator korzysta z aktualnych konfiguracji
-w [`containers/`](../containers/); starsze, ręczne przykłady są w
-[`stacks/`](../stacks/). Nie uruchamiaj obu układów jednocześnie ani
-wszystkiego naraz bez dostosowania ścieżek, sekretów, urządzeń i reguł sieci.
+plików, gry oraz utrzymanie. Kreator korzysta z aktualnych konfiguracji
+w [`containers/`](../containers/). Nie uruchamiaj wszystkiego naraz bez dostosowania ścieżek, sekretów, urządzeń i reguł sieci.
 
 ## Host, administracja i dane
 
@@ -28,7 +25,7 @@ odbudowy. Zobacz [opis RAID i kopii zapasowych](storage-and-raid.md).
 
 | Rola | Usługa / komponent | Zasady i źródła |
 |---|---|---|
-| Reverse proxy | Kontener `nginx-proxy` | [Repozytorium nginx-proxy](https://github.com/nginx-proxy/nginx-proxy); [przykładowy Compose](../stacks/reverse-proxy/compose.yaml); przyjmuje żądania HTTP/HTTPS i na podstawie domeny/subdomeny kieruje je do właściwego kontenera aplikacji. Wystawiaj tylko zaplanowane porty HTTP/HTTPS. |
+| Reverse proxy | Kontener `nginx-proxy` | [Repozytorium nginx-proxy](https://github.com/nginx-proxy/nginx-proxy); [przykładowy Compose](../containers/nginx-proxy/compose.yaml); przyjmuje żądania HTTP/HTTPS i na podstawie domeny/subdomeny kieruje je do właściwego kontenera aplikacji. Wystawiaj tylko zaplanowane porty HTTP/HTTPS. |
 | Certyfikaty | Let's Encrypt przez ACME | Certyfikaty można zautomatyzować przez [acme-companion](https://github.com/nginx-proxy/acme-companion) dla nginx-proxy albo konfigurować osobno przez [Certbot](https://certbot.eff.org/). Wybierz jeden spójny mechanizm zarządzania certyfikatami i odnowieniami. |
 | DNS i router | Domena, rekordy DNS, NAT | Rekord DNS wskazuje domenę/subdomenę na adres serwera; dopiero `nginx-proxy` wybiera kontener docelowy. Publikuj tylko niezbędne porty. Nie wystawiaj Cockpit, SSH, SMB, MQTT, paneli administracyjnych ani baz danych do Internetu. |
 
@@ -55,7 +52,8 @@ samego reverse proxy.
 
 Część dostawców DDNS wymaga też konfiguracji po stronie routera (np.
 wbudowany klient DDNS z loginem i nazwą hosta) — sprawdź instrukcję dostawcy
-i modelu routera; kreator tego nie ustawia.
+i modelu routera; kreator tego nie ustawia. Instalację klienta DDNS na hoście
+(`ddclient`/`inadyn`) i wymagania sieciowe opisuje [DDNS](ddns.md).
 
 DDNS nie omija **CGNAT** ani blokady ruchu przychodzącego przez dostawcę
 Internetu. Jeśli router nie ma własnego, osiągalnego publicznego adresu
@@ -97,10 +95,10 @@ udostępniać przez VPN albo reverse proxy z poprawnym TLS.
 
 | Usługa | Rola | Oficjalne źródła |
 |---|---|---|
-| Nextcloud + PostgreSQL + Redis | Pliki, kalendarz i współpraca; aplikacja i baza powinny mieć własne kopie. | [Nextcloud](https://nextcloud.com/), [dokumentacja administracyjna](https://docs.nextcloud.com/server/latest/admin_manual/), [główny Compose](../compose.yaml) |
-| Immich (opcjonalnie) | Zarządzanie zdjęciami i wideo. | [Immich](https://immich.app/), [dokumentacja i aktualny Compose](https://docs.immich.app/), [główny Compose](../compose.yaml) |
-| Euro-Office / Nextcloud Office | Wspólna edycja dokumentów w Nextcloud; serwer Document Server jest usługą towarzyszącą Nextcloud, a nie samodzielnym dyskiem/chmurą. | [Dokumentacja Euro-Office](https://euro-office.github.io/documentation/), [instalacja](https://euro-office.github.io/documentation/installation/), [Office w Nextcloud](https://docs.nextcloud.com/server/latest/admin_manual/office/index.html), [przykładowy Compose](../stacks/euro-office/compose.yaml) |
-| Samba (SMB) | Udostępnianie katalogów hosta urządzeniom w LAN. | [Dokumentacja Samba](https://wiki.samba.org/index.php/Main_Page), [przykładowy Compose](../stacks/samba/compose.yaml); zezwól tylko na zaufaną sieć i przypisz osobne konta/uprawnienia. |
+| Nextcloud + PostgreSQL + Redis | Pliki, kalendarz i współpraca; aplikacja i baza powinny mieć własne kopie. | [Nextcloud](https://nextcloud.com/), [dokumentacja administracyjna](https://docs.nextcloud.com/server/latest/admin_manual/), [Compose Nextcloud](../containers/nextcloud/compose.yaml) |
+| Immich | Zarządzanie zdjęciami i wideo; odpowiednik Zdjęć Google. Aplikacja mobilna na Androida/iOS automatycznie synchronizuje zdjęcia z telefonów, o ile ma dostęp do serwera (HTTPS lub VPN). Zobacz [opis](../containers/immich/README.md). | [Immich](https://immich.app/), [dokumentacja i aktualny Compose](https://docs.immich.app/), [Compose Immich](../containers/immich/compose.yaml) |
+| Euro-Office / Nextcloud Office | Wspólna edycja dokumentów w Nextcloud; serwer Document Server jest usługą towarzyszącą Nextcloud, a nie samodzielnym dyskiem/chmurą. | [Dokumentacja Euro-Office](https://euro-office.github.io/documentation/), [instalacja](https://euro-office.github.io/documentation/installation/), [Office w Nextcloud](https://docs.nextcloud.com/server/latest/admin_manual/office/index.html), [przykładowy Compose](../containers/euro-office/compose.yaml) |
+| Samba (SMB) | Udostępnianie katalogów hosta urządzeniom w LAN. | [Dokumentacja Samba](https://wiki.samba.org/index.php/Main_Page), [przykładowy Compose](../containers/samba/compose.yaml); zezwól tylko na zaufaną sieć i przypisz osobne konta/uprawnienia. |
 
 Nextcloud, Immich, Euro-Office i udziały Samby mogą korzystać z tych samych
 fizycznych dysków, ale nie należy bez planu montować tego samego katalogu do
@@ -111,9 +109,9 @@ strukturę katalogów oraz sposób kopii i przywracania dla każdej usługi.
 
 | Usługa | Rola | Oficjalne źródła |
 |---|---|---|
-| Home Assistant | Automatyzacje, integracje i panel smart home. | [Home Assistant](https://www.home-assistant.io/), [instalacja Container na Linux/Docker](https://www.home-assistant.io/installation/linux/), [przykładowy Compose](../stacks/home-assistant/compose.yaml) |
-| MQTT / Mosquitto | Broker komunikatów dla urządzeń i integracji. | [Eclipse Mosquitto](https://mosquitto.org/), [dokumentacja](https://mosquitto.org/documentation/), [przykładowy Compose](../stacks/mqtt/compose.yaml) |
-| Zigbee2MQTT | Łączy koordynator Zigbee z MQTT i urządzeniami Zigbee. | [Zigbee2MQTT](https://www.zigbee2mqtt.io/), [instalacja Docker](https://www.zigbee2mqtt.io/guide/installation/02_docker.html), [przykładowy Compose](../stacks/zigbee2mqtt/compose.yaml) |
+| Home Assistant | Automatyzacje, integracje i panel smart home. | [Home Assistant](https://www.home-assistant.io/), [instalacja Container na Linux/Docker](https://www.home-assistant.io/installation/linux/), [przykładowy Compose](../containers/home-assistant/compose.yaml) |
+| MQTT / Mosquitto | Broker komunikatów dla urządzeń i integracji. | [Eclipse Mosquitto](https://mosquitto.org/), [dokumentacja](https://mosquitto.org/documentation/), [przykładowy Compose](../containers/mqtt/compose.yaml) |
+| Zigbee2MQTT | Łączy koordynator Zigbee z MQTT i urządzeniami Zigbee. | [Zigbee2MQTT](https://www.zigbee2mqtt.io/), [instalacja Docker](https://www.zigbee2mqtt.io/guide/installation/02_docker.html), [przykładowy Compose](../containers/zigbee2mqtt/compose.yaml) |
 
 Home Assistant Container nie zawiera systemu dodatków dostępnego w Home
 Assistant OS — broker MQTT i Zigbee2MQTT to osobne usługi. Zigbee2MQTT wymaga
@@ -125,8 +123,8 @@ i nie powinien być otwarty do Internetu.
 
 | Usługa | Rola | Oficjalne źródła |
 |---|---|---|
-| WordPress | CMS dla strony lub bloga; zwykle potrzebuje własnej bazy danych i trwałego katalogu `wp-content`. | [WordPress](https://wordpress.org/), [instrukcja instalacji](https://developer.wordpress.org/advanced-administration/before-install/howto-install/), [oficjalny obraz Docker](https://hub.docker.com/_/wordpress), [przykładowy Compose](../stacks/wordpress/compose.yaml) |
-| Django (zamiennik WordPressa) | Framework do budowy własnej strony lub aplikacji WWW zamiast gotowego CMS; wymaga własnego projektu, Dockerfile i zwykle bazy PostgreSQL. Starter nie dostarcza kontenera Django. | [Django](https://www.djangoproject.com/), [dokumentacja wdrożeń](https://docs.djangoproject.com/en/stable/howto/deployment/), [oficjalny obraz Python](https://hub.docker.com/_/python) |
+| WordPress | CMS dla strony lub bloga; zwykle potrzebuje własnej bazy danych i trwałego katalogu `wp-content`. | [WordPress](https://wordpress.org/), [instrukcja instalacji](https://developer.wordpress.org/advanced-administration/before-install/howto-install/), [oficjalny obraz Docker](https://hub.docker.com/_/wordpress), [przykładowy Compose](../containers/wordpress/compose.yaml) |
+| Django (zamiennik WordPressa) | Framework do budowy własnej strony lub aplikacji WWW zamiast gotowego CMS; wymaga własnego projektu, Dockerfile i zwykle bazy PostgreSQL. Starter dostarcza minimalny [szablon](../containers/django/) z Dockerfile, PostgreSQL i Gunicornem. | [Django](https://www.djangoproject.com/), [dokumentacja wdrożeń](https://docs.djangoproject.com/en/stable/howto/deployment/), [oficjalny obraz Python](https://hub.docker.com/_/python) |
 
 WordPress powinien mieć osobną bazę i sekrety, regularne aktualizacje rdzenia,
 wtyczek i motywów oraz kopię bazy i plików. Ruch webowy kieruj przez wspólny
@@ -136,8 +134,8 @@ reverse proxy; nie publikuj bez potrzeby dodatkowych portów aplikacji.
 
 | Usługa | Rola | Oficjalne źródła |
 |---|---|---|
-| Jellyfin | Strumieniowanie filmów, seriali i muzyki z katalogów biblioteki. | [Jellyfin](https://jellyfin.org/), [instalacja w Dockerze](https://jellyfin.org/docs/general/installation/container/), [przykładowy Compose](../stacks/jellyfin/compose.yaml) |
-| Minecraft | Osobny serwer gry; obraz kontenera jest projektem społeczności, nie oficjalnym obrazem Mojang/Microsoft. | [Projekt itzg/docker-minecraft-server](https://github.com/itzg/docker-minecraft-server), [Minecraft EULA](https://www.minecraft.net/en-us/eula), [przykładowy Compose](../stacks/minecraft/compose.yaml) |
+| Jellyfin | Strumieniowanie filmów, seriali i muzyki z katalogów biblioteki. | [Jellyfin](https://jellyfin.org/), [instalacja w Dockerze](https://jellyfin.org/docs/general/installation/container/), [przykładowy Compose](../containers/jellyfin/compose.yaml) |
+| Minecraft | Osobny serwer gry; obraz kontenera jest projektem społeczności, nie oficjalnym obrazem Mojang/Microsoft. | [Projekt itzg/docker-minecraft-server](https://github.com/itzg/docker-minecraft-server), [Minecraft EULA](https://www.minecraft.net/en-us/eula), [przykładowy Compose](../containers/minecraft/compose.yaml) |
 
 Montuj bibliotekę Jellyfin tylko do odczytu, jeśli aplikacja nie musi niczego
 w niej zmieniać. Utrzymuj zapisywalne konfigurację, cache i bazę Jellyfin
@@ -149,14 +147,13 @@ administracyjnej publicznie.
 
 | Rola | Usługa / metoda | Źródła i uwagi |
 |---|---|---|
-| Monitoring wydań | What's Up Docker? (WUD) lub podobny updater | [Repozytorium WUD](https://github.com/getwud/wud), [przykładowy Compose](../stacks/wud/compose.yaml). Najpierw monitoruj i powiadamiaj; automatyczne podmienianie obrazów baz, Nextcloud, Immich czy WordPress bez kopii/testu może spowodować awarię lub utratę danych. |
+| Aktualizacje kontenerów | Updater (osobny projekt) | [Homelab Container Updater](https://github.com/mmalmon/homelab-container-updater), [opis i wzór](../containers/updater/README.md). Wysyła e-mail z jednorazowym linkiem i wymaga hasła; nie jest instalowany przez kreator. Automatyczne podmienianie obrazów baz, Nextcloud, Immich czy WordPress bez kopii/testu może spowodować awarię lub utratę danych. |
 | Aktualizacje systemu | APT / aktualizacje bezpieczeństwa Ubuntu | Weryfikuj po aktualizacji stan hosta, Docker, usługi i odtwarzanie kopii. |
 | Kopie i odtwarzanie | Osobna procedura dla każdej usługi | [Kopie Nextcloud i Immich](backup-and-restore.md); sprawdzaj odtworzenie, nie tylko powstanie plików. |
 
-Updater potrzebuje dostępu do informacji o działających kontenerach. Dostęp
-do `/var/run/docker.sock` jest równoważny bardzo wysokim uprawnieniom na
-hoście — ogranicz go, zabezpiecz panel WUD i nie włączaj automatycznych
-aktualizacji wszystkich kontenerów bez wyjątków i planu powrotu.
+Updater działa na hoście i steruje Dockerem. Dostęp do `/var/run/docker.sock`
+jest równoważny bardzo wysokim uprawnieniom na hoście — uruchamiaj go tylko dla
+zaufanych projektów Compose i miej niezależne kopie zapasowe.
 
 ## Własne projekty
 
@@ -184,5 +181,5 @@ porty i opisaną kopię zapasową. Bazy i panele administracyjne pozostaw w
 wewnętrznych sieciach Compose, jeśli inne usługi nie muszą się z nimi łączyć.
 Przed użyciem sprawdzaj oficjalną dokumentację wersji, której faktycznie
 używasz; pliki `main`/`latest` z Internetu nie zawsze pasują do wydania.
-Przykłady wdrożeniowe, sieci wspólne i konfiguracja proxy są opisane w
-[instrukcji osobnych stosów Compose](compose-stacks.md).
+Konfiguracja proxy jest opisana w [nginx-proxy](nginx-proxy.md), a każdy stos
+w swoim katalogu [`containers/`](../containers/).

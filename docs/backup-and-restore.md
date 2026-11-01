@@ -7,6 +7,8 @@ sprawdzaj, czy da się ją odtworzyć.
 
 ## Nextcloud
 
+Polecenia `docker compose` wykonuj w katalogu `containers/nextcloud/`.
+
 1. Włącz tryb konserwacji:
 
    ```bash

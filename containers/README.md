@@ -13,6 +13,7 @@ kopiowania bazowego Dockerfile upstream bez potrzeby.
 
 Stosy z interfejsem HTTP deklarują `VIRTUAL_HOST` i dołączają do wspólnej
 sieci `homelab-proxy`. Kreator przypisuje domenę i dodaje tylko wybrane usługi.
+Django i WordPress są alternatywami: Django buduje własny obraz z `app/`.
 Home Assistant (tryb host), MQTT, SMB i Minecraft nie są routingowane przez
 HTTP reverse proxy. Panel Zigbee2MQTT jest administracyjny — nie wystawiaj go
 publicznie bez skonfigurowanego uwierzytelniania.

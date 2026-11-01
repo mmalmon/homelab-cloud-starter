@@ -87,9 +87,9 @@ Docker tworzy własne reguły sieciowe. Ruch do portów opublikowanych przez
 Compose może zostać przekierowany **przed regułami UFW**, więc samo
 `ufw deny` nie jest wystarczającą ochroną usług kontenerowych.
 
-- Starter domyślnie wiąże porty aplikacji z `127.0.0.1`. Zachowaj to
+- Kreator wiąże porty proxy z adresem LAN, a nie z `0.0.0.0`. Zachowaj to
   ustawienie, jeśli dostęp ma odbywać się lokalnie lub przez reverse proxy.
-- Nie ustawiaj `BIND_ADDRESS=0.0.0.0` bez przemyślanej filtracji ruchu do
+- Nie ustawiaj `PROXY_BIND_ADDRESS=0.0.0.0` bez przemyślanej filtracji ruchu do
   sieci Docker i sprawdzenia dostępu z innego urządzenia.
 - Nie wyłączaj reguł iptables Dockera, żeby „naprawić” UFW — może to zepsuć
   izolację i łączność kontenerów.

@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import getpass
 import ipaddress
 import json
 import os
@@ -16,6 +15,8 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+import ddns_client
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,35 +30,34 @@ SERVICES = {
     "mqtt": ("Mosquitto MQTT", False, ()),
     "zigbee2mqtt": ("Zigbee2MQTT", True, ("mqtt",)),
     "wordpress": ("WordPress + MySQL", True, ()),
+    "django": ("Django (alternatywa dla WordPressa)", True, ()),
     "jellyfin": ("Jellyfin", True, ()),
     "euro-office": ("Euro-Office dla Nextcloud", True, ("nextcloud",)),
     "minecraft": ("Minecraft Java", False, ()),
     "samba": ("Samba SMB", False, ()),
-    "wud": ("WUD - monitoring aktualizacji kontenerów", False, ()),
 }
 WEB_ENV = {
     "nextcloud": ("NEXTCLOUD_HOST", "NEXTCLOUD_TLS_HOST"),
     "immich": ("IMMICH_HOST", "IMMICH_TLS_HOST"),
     "zigbee2mqtt": ("ZIGBEE2MQTT_HOST", "ZIGBEE2MQTT_TLS_HOST"),
     "wordpress": ("WORDPRESS_HOST", "WORDPRESS_TLS_HOST"),
+    "django": ("DJANGO_HOST", "DJANGO_TLS_HOST"),
     "jellyfin": ("JELLYFIN_HOST", "JELLYFIN_TLS_HOST"),
     "euro-office": ("EURO_OFFICE_HOST", "EURO_OFFICE_TLS_HOST"),
 }
 START_ORDER = (
     "nginx-proxy",
-    "ddns-cloudflare",
-    "ddns-duckdns",
     "mqtt",
     "home-assistant",
     "nextcloud",
     "immich",
     "wordpress",
+    "django",
     "jellyfin",
     "euro-office",
     "zigbee2mqtt",
     "minecraft",
     "samba",
-    "wud",
 )
 
 
@@ -270,21 +270,6 @@ def write_env(path: Path, updates: dict[str, str]) -> None:
     temp.replace(path)
 
 
-def merge_ddns_config(provider: str, existing: dict[str, str], updates: dict[str, str]) -> dict[str, str]:
-    merged = dict(updates)
-    if provider == "ddns-cloudflare":
-        domains = set(filter(None, existing.get("DOMAINS", "").split(",")))
-        domains.update(filter(None, merged.get("DOMAINS", "").split(",")))
-        merged["DOMAINS"] = ",".join(sorted(domains))
-        merged.setdefault("CLOUDFLARE_API_TOKEN", existing.get("CLOUDFLARE_API_TOKEN", ""))
-    elif provider == "ddns-duckdns":
-        labels = set(filter(None, existing.get("SUBDOMAINS", "").split(",")))
-        labels.update(filter(None, merged.get("SUBDOMAINS", "").split(",")))
-        merged["SUBDOMAINS"] = ",".join(sorted(labels))
-        merged.setdefault("DUCKDNS_TOKEN", existing.get("DUCKDNS_TOKEN", ""))
-    return merged
-
-
 def validate_domain(value: str) -> bool:
     if len(value) > 253 or not value or value.endswith("."):
         return False
@@ -304,7 +289,7 @@ def ask_domain(prompt: str, default: str) -> str:
         print("Podaj poprawną nazwę DNS, np. cloud.example.org.")
 
 
-def collect_network(selected: set[str], old_values: dict[str, dict[str, str]]) -> tuple[dict[str, dict[str, str]], dict[str, str], str, str]:
+def collect_network(selected: set[str], old_values: dict[str, dict[str, str]]) -> tuple[dict[str, dict[str, str]], dict[str, str], str]:
     web_services = sorted(selected.intersection(WEB_ENV))
     public_services = [name for name in web_services if name != "zigbee2mqtt"]
     network_env: dict[str, dict[str, str]] = {}
@@ -312,27 +297,24 @@ def collect_network(selected: set[str], old_values: dict[str, dict[str, str]]) -
     mode = "local"
     lan_ip = detect_lan_address()
     old_proxy = read_env(CONTAINERS / "nginx-proxy" / ".env")
-    duckdns_exists = (CONTAINERS / "ddns-duckdns" / ".env").exists()
-    cloudflare_exists = (CONTAINERS / "ddns-cloudflare" / ".env").exists()
     if public_services:
         print("\nDostęp sieciowy dla usług WWW:")
         print("  1. LAN/VPN (lokalna domena, bez certyfikatu publicznego)")
         print("  2. Publiczne IP stałe (ręczne rekordy DNS)")
-        print("  3. DDNS (automatyczny kontener dla DuckDNS lub Cloudflare)")
+        print("  3. Dynamiczne IP z DDNS (opcjonalny klient na hoście: ddclient/inadyn)")
         mode_default = {
             "local": "1",
             "static": "2",
             "ddns": "3",
         }.get(
             old_proxy.get("NETWORK_MODE", ""),
-            "3" if duckdns_exists or cloudflare_exists else "1",
+            "1",
         )
         choice = ask("Wybierz 1-3", mode_default)
         mode = {"1": "local", "2": "static", "3": "ddns"}.get(choice, "")
         if not mode:
             raise WizardError("Nieprawidłowy wybór dostępu sieciowego.")
 
-    provider = ""
     base_domain = ""
     if mode == "local" and web_services:
         base_domain = ask_domain(
@@ -352,33 +334,11 @@ def collect_network(selected: set[str], old_values: dict[str, dict[str, str]]) -
                 pass
             print("Wpisz globalny, publiczny IPv4 (nie adres prywatny/LAN).")
     elif mode == "ddns":
-        provider_default = {
-            "ddns-duckdns": "1",
-            "ddns-cloudflare": "2",
-        }.get(
-            old_proxy.get("DDNS_PROVIDER", ""),
-            "1" if duckdns_exists else "2" if cloudflare_exists else "1",
+        base_domain = ask_domain(
+            "Domena lub nazwa z Twojego dostawcy DDNS",
+            old_proxy.get("BASE_DOMAIN", "example.org"),
         )
-        provider_choice = ask("Dostawca DDNS: 1 DuckDNS, 2 Cloudflare", provider_default)
-        if provider_choice not in {"1", "2"}:
-            raise WizardError("Nieprawidłowy wybór DDNS.")
-        provider = "ddns-duckdns" if provider_choice == "1" else "ddns-cloudflare"
-        if provider == "ddns-cloudflare":
-            old_domain = (
-                old_proxy.get("BASE_DOMAIN", "example.org")
-                if old_proxy.get("DDNS_PROVIDER") == provider
-                else "example.org"
-            )
-            base_domain = ask_domain("Domena bazowa zarządzana w Cloudflare", old_domain)
-            old_token = read_env(CONTAINERS / provider / ".env").get("CLOUDFLARE_API_TOKEN", "")
-            token = getpass.getpass("Cloudflare API token (Enter zachowuje istniejący; wymagane DNS: Edit): ")
-            if not token:
-                token = old_token
-            if not token or token.startswith("replace-with-"):
-                raise WizardError("Token Cloudflare nie może być pusty.")
-            ddns_env["CLOUDFLARE_API_TOKEN"] = token
-        else:
-            print("Zarejestruj każdy używany hostname jako osobną nazwę DuckDNS; nie obsługuje sub-subdomen.")
+        print("Klienta DDNS możesz zainstalować na końcu albo pominąć, jeśli DDNS działa w routerze (zob. docs/ddns.md).")
 
     bind_ip = old_proxy.get("PROXY_BIND_ADDRESS", lan_ip)
     if web_services or "samba" in selected:
@@ -389,7 +349,6 @@ def collect_network(selected: set[str], old_values: dict[str, dict[str, str]]) -
         except ValueError as exc:
             raise WizardError("Podaj poprawny adres IPv4 interfejsu LAN.") from exc
 
-    hostnames: list[str] = []
     for service in web_services:
         host_key, tls_key = WEB_ENV[service]
         old = old_values.get(service, {})
@@ -406,27 +365,10 @@ def collect_network(selected: set[str], old_values: dict[str, dict[str, str]]) -
             hostname = ask_domain(f"Publiczny hostname dla {service}", default)
             tls_hostname = hostname
             print(f"  DNS: ustaw rekord A {hostname} → {ddns_env['STATIC_PUBLIC_IPV4']}.")
-        elif provider == "ddns-duckdns":
-            default_label = service.replace("-", "")
-            while True:
-                label = ask(f"Zarejestrowana nazwa DuckDNS dla {service} (bez .duckdns.org)", default_label).lower()
-                if re.fullmatch(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", label):
-                    break
-                print("Użyj pojedynczej nazwy DuckDNS bez kropek.")
-            hostname = f"{label}.duckdns.org"
-            tls_hostname = hostname
-            host_key = WEB_ENV[service][0]
-            ddns_env.setdefault("SUBDOMAINS", "")
-            labels = set(filter(None, ddns_env["SUBDOMAINS"].split(",")))
-            labels.add(label)
-            ddns_env["SUBDOMAINS"] = ",".join(sorted(labels))
         else:
             default = current or f"{service.replace('-', '')}.{base_domain}"
-            hostname = ask_domain(f"Hostname Cloudflare dla {service}", default)
-            if not hostname.endswith(f".{base_domain}") and hostname != base_domain:
-                raise WizardError(f"{hostname} nie należy do domeny Cloudflare {base_domain}.")
+            hostname = ask_domain(f"Publiczny hostname DDNS dla {service}", default)
             tls_hostname = hostname
-            hostnames.append(hostname)
 
         updates = {host_key: hostname, tls_key: tls_hostname, "LETSENCRYPT_EMAIL": ""}
         network_env.setdefault(service, {}).update(updates)
@@ -442,14 +384,11 @@ def collect_network(selected: set[str], old_values: dict[str, dict[str, str]]) -
             raise WizardError("Podaj poprawny adres e-mail.")
         for service in public_services:
             network_env[service]["LETSENCRYPT_EMAIL"] = email
-        if mode == "ddns" and provider == "ddns-cloudflare":
-            ddns_env["DOMAINS"] = ",".join(sorted(set(hostnames)))
 
     proxy_env = network_env.setdefault("nginx-proxy", {})
     proxy_env.update({
         "PROXY_BIND_ADDRESS": bind_ip,
         "NETWORK_MODE": mode,
-        "DDNS_PROVIDER": provider,
         "BASE_DOMAIN": base_domain,
         "STATIC_PUBLIC_IPV4": ddns_env.get("STATIC_PUBLIC_IPV4", ""),
     })
@@ -458,7 +397,7 @@ def collect_network(selected: set[str], old_values: dict[str, dict[str, str]]) -
         if public_services and mode != "local"
         else old_proxy.get("LETSENCRYPT_EMAIL", "")
     )
-    return network_env, ddns_env, mode, provider
+    return network_env, ddns_env, mode
 
 
 def setup_firewall(os_info: dict[str, str], mode: str, selected: set[str], lan_cidr: str) -> None:
@@ -657,11 +596,17 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         old_values = {name: read_env(CONTAINERS / name / ".env") for name in selected}
-        network_env, ddns_env, mode, provider = collect_network(selected, old_values)
+        network_env, ddns_env, mode = collect_network(selected, old_values)
         if any(SERVICES.get(name, ("", False, ()))[1] for name in selected):
             selected.add("nginx-proxy")
-        if provider:
-            selected.add(provider)
+        ddns_plan = None
+        if mode == "ddns":
+            public_hosts = sorted({
+                values[WEB_ENV[name][1]]
+                for name, values in network_env.items()
+                if name in WEB_ENV and values.get(WEB_ENV[name][1])
+            })
+            ddns_plan = ddns_client.collect(public_hosts, ask)
 
         lan_cidr = ask("Zaufana podsieć LAN dla Cockpit/HA/SMB (CIDR; Enter pomija ograniczone reguły)", "")
         if lan_cidr:
@@ -675,19 +620,12 @@ def main(argv: list[str] | None = None) -> int:
             setup_firewall(os_info, mode, selected, lan_cidr)
             print("Uwaga: publikowane porty Docker mogą omijać UFW/firewalld. Ogranicz ekspozycję również przez bindowanie i reguły routera/DOCKER-USER.")
 
-        if provider:
-            previous_ddns = read_env(CONTAINERS / provider / ".env")
-            ddns_env = merge_ddns_config(provider, previous_ddns, ddns_env)
-
-        if provider == "ddns-duckdns":
-            old_token = read_env(CONTAINERS / provider / ".env").get("DUCKDNS_TOKEN", "")
-            token = getpass.getpass("DuckDNS token (Enter zachowuje istniejący): ")
-            if not token:
-                token = old_token
-            if not token:
-                raise WizardError("Token DuckDNS nie może być pusty.")
-            ddns_env["DUCKDNS_TOKEN"] = token
-            ddns_env.update({"PUID": str(os.getuid()), "PGID": str(os.getgid())})
+        if ddns_plan:
+            client, provider, creds = ddns_plan
+            path = ddns_client.apply(client, provider, public_hosts, creds, os_info.get("ID", "").lower(), privileged)
+            print(f"Klient DDNS {client} zainstalowany; konfiguracja: {path} (chmod 600).")
+            print("Uwaga: klient aktualizuje tylko rekord DNS. Router nadal może wymagać przekierowania")
+            print("portów 80/443, reguł NAT/firewalla, a przy CGNAT publicznego adresu lub VPN.")
         all_env = {**network_env}
         if "samba" in selected:
             all_env.setdefault("samba", {}).update({
@@ -755,7 +693,7 @@ def main(argv: list[str] | None = None) -> int:
         print("\nGotowe. Sprawdź `docker compose ps` w katalogach wybranych usług.")
         print("Dostęp publiczny wymaga poprawnych rekordów DNS, przekierowań portów i sprawdzenia zewnętrznego.")
         return 0
-    except (WizardError, subprocess.CalledProcessError, EOFError, KeyboardInterrupt) as exc:
+    except (WizardError, ddns_client.DdnsError, subprocess.CalledProcessError, EOFError, KeyboardInterrupt) as exc:
         if isinstance(exc, KeyboardInterrupt):
             print("\nPrzerwano przez użytkownika.", file=sys.stderr)
             return 130

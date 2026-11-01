@@ -1,0 +1,35 @@
+services:
+  updater-web:
+    image: python:3.13-alpine
+    container_name: updater-web
+    restart: unless-stopped
+    user: "${APP_UID:-1000}:${APP_GID:-1000}"
+    command: ["python", "-u", "/app/web.py"]
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 64
+    mem_limit: 128m
+    volumes:
+      - ./web:/app:ro
+      - ./state:/state
+    environment:
+      STATE_DIR: /state
+      VIRTUAL_HOST: "${UPDATER_HOST:?Set UPDATER_HOST in .env}"
+      VIRTUAL_PORT: "8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8080/updates/health',timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      proxy:
+        aliases:
+          - updater-web
+
+networks:
+  proxy:
+    external: true
+    name: "${PROXY_NETWORK:-homelab-proxy}"

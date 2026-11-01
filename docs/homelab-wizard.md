@@ -42,12 +42,10 @@ Kreator oferuje trzy warianty:
 2. **Publiczny stały IPv4:** podaj domenę i adres. Kreator zapisuje hostnames
    oraz pokazuje wymagane rekordy DNS. Rekordy statyczne trzeba utworzyć u
    operatora DNS samodzielnie.
-3. **DDNS:** wybierz DuckDNS lub Cloudflare. Kreator zapisuje token do
-   chronionego `.env`, tworzy odpowiedni osobny stos updatera i dodaje do
-   niego hostnames wybranych aplikacji. Przy dodawaniu kolejnej usługi zachowuje
-   już skonfigurowane hostnames i token. Token DuckDNS lub Cloudflare jest
-   pytany bez wyświetlania na ekranie. Cloudflare powinien mieć osobny API
-   token z ograniczonym dostępem `Zone:DNS:Edit`, a nie globalny klucz.
+3. **DDNS:** podaj hostnames od swojego dostawcy. Kreator może dodatkowo
+   zainstalować na hoście klienta `ddclient` lub `inadyn` (DuckDNS, Cloudflare,
+   No-IP) albo pominąć ten krok, gdy DDNS działa w routerze. Szczegóły i
+   wymagania routera opisuje [DDNS](ddns.md). Kontenerów DDNS nie ma.
 
 Dla publicznych hostnames kreator dołącza `acme-companion` do `nginx-proxy`
 i ustawia `LETSENCRYPT_HOST`. Przed pierwszym startem ustaw DNS i router:
@@ -82,13 +80,13 @@ LAN/VPN, a w trybie publicznym pozostawia bez hosta i certyfikatu.
   z `0.0.0.0`. Sprawdź, czy router przekazuje publiczne porty do tego samego
   adresu. Nie wystawiaj Cockpit, Docker API/socketu, baz, SMB ani MQTT do
   Internetu.
-- Dostęp do Docker socketu w `nginx-proxy` i WUD jest bardzo uprzywilejowany.
-  Używaj zaufanych obrazów, nie wystawiaj panelu WUD publicznie, preferuj
-  powiadomienia i ręczne aktualizacje.
+- Dostęp do Docker socketu w `nginx-proxy` jest bardzo uprzywilejowany.
+  Używaj zaufanych obrazów. Aktualizacje kontenerów opisuje
+  [Updater](../containers/updater/README.md) — nie jest instalowany przez kreator.
 - Pliki `.env` zawierają sekrety i są ustawiane jako `600`; nigdy nie
   publikuj ich, nie dodawaj do zgłoszeń i nie wklejaj do logów.
-- Kreator nie konfiguruje konta Cloudflare/DuckDNS, publicznych DNS dla
-  stałego adresu, przekierowań portów routera, klienta DDNS w routerze,
+- Kreator nie konfiguruje konta u dostawcy DDNS, publicznych DNS dla
+  stałego adresu, przekierowań portów routera, klienta DDNS w routerze (kreator może tylko zainstalować klienta na hoście),
   weryfikacji domeny ani poprawnych ustawień reverse proxy wewnątrz aplikacji.
 - Minecraft pozostaje wyłączony, dopóki administrator nie zaakceptuje EULA.
   Kreator wymaga jawnego potwierdzenia i whitelisty.
@@ -97,7 +95,5 @@ LAN/VPN, a w trybie publicznym pozostawia bez hosta i certyfikatu.
   przeznaczony do dodawania stosów.
 
 Instrukcje obsługi poszczególnych Compose i zależności między usługami są w
-[dokumentacji stosów](compose-stacks.md). Sprawdź oficjalne dokumentacje
-[Dockera](https://docs.docker.com/engine/install/), [Cockpit](https://cockpit-project.org/running.html),
-[DuckDNS](https://github.com/linuxserver/docker-duckdns) i
-[Cloudflare DDNS](https://github.com/favonia/cloudflare-ddns).
+[katalogu kontenerów](../containers/README.md). Sprawdź oficjalne dokumentacje
+[Dockera](https://docs.docker.com/engine/install/) i [Cockpit](https://cockpit-project.org/running.html).
