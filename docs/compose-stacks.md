@@ -95,8 +95,8 @@ Nextcloud i Immich są zdefiniowane w głównym `compose.yaml`. Żeby podłączy
 je do tego samego proxy, uruchom Compose z dodatkowym override:
 
 ```bash
-cd ../..
-cp .env.example .env
+# Uruchom z katalogu głównego repozytorium; nie nadpisuj istniejącego .env.
+test -f .env || cp .env.example .env
 # Ustaw sekrety oraz NEXTCLOUD_HOST/IMMICH_HOST i LETSENCRYPT_EMAIL.
 docker compose --env-file .env -f compose.yaml \
   -f stacks/reverse-proxy/nextcloud.override.yaml config --quiet
@@ -117,7 +117,7 @@ CGNAT może uniemożliwić takie połączenie.
 |---|---|
 | Nextcloud, Immich | HTTP przez `nginx-proxy` po użyciu override; lokalne porty pozostają związane z `127.0.0.1`. |
 | WordPress, Jellyfin, Zigbee2MQTT, Euro-Office | HTTP przez wspólną sieć `homelab-proxy`; hosty i TLS są opcjonalne. |
-| Home Assistant | Domyślnie `network_mode: host` dla discovery. Dostęp w LAN/VPN; proxy wymaga osobnej konfiguracji upstream do hosta oraz ustawień `trusted_proxies` w Home Assistant. |
+| Home Assistant | Domyślnie `network_mode: host` dla discovery, więc port 8123 należy ograniczyć firewallem do LAN/VPN. Proxy wymaga osobnej konfiguracji upstream do hosta oraz ustawień `trusted_proxies` w Home Assistant. |
 | MQTT / Mosquitto | MQTT/TCP, nie HTTP; port 1883 jest domyślnie związany wyłącznie z loopback hosta. Nie dodawaj go do nginx-proxy. |
 | Samba | SMB/TCP; wystaw wyłącznie w zaufanej sieci lokalnej. Reverse proxy HTTP nie obsługuje SMB. |
 | Minecraft | Port gry TCP; ustaw bindowanie do adresu LAN, whitelistę i świadome reguły routera/firewalla. |
