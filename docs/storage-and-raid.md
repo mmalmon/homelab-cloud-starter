@@ -6,8 +6,8 @@ Dyski przechowujące dane są w tym serwerze zorganizowane w macierz RAID, aby
 ograniczyć przestój przy awarii dysku. To opis konfiguracji tego homelaba,
 a nie wymaganie dla każdego, kto kopiuje starter. Nie podajemy poziomu RAID,
 liczby dysków ani kontrolera — te parametry należy sprawdzić w konfiguracji
-konkretnej maszyny, zamiast zgadywać je na podstawie katalogu `/mnt/raid`
-lub systemu plików (np. ext4).
+konkretnej maszyny, zamiast zgadywać je na podstawie nazwy katalogu
+montowania lub systemu plików (np. ext4).
 
 ## Sprawdź istniejącą konfigurację
 
@@ -62,4 +62,5 @@ i regularnie wykonuj próbne odtwarzanie. Więcej szczegółów o usługach:
 ### Źródła
 
 - [mdadm — dokumentacja pakietu Ubuntu](https://manpages.ubuntu.com/manpages/noble/man8/mdadm.8.html)
-- [Strategia kopii 3-2-1 — CISA](https://www.cisa.gov/stopransomware/ransomware-guide)
+- [Ubuntu Server: zarządzanie pamięcią masową](https://ubuntu.com/server/docs/how-to/storage/)
+- [Ochrona przed ransomware — CISA](https://www.cisa.gov/stopransomware/ransomware-guide)
