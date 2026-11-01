@@ -1,9 +1,9 @@
 # Kopia zapasowa i odtwarzanie
 
-Kopia powinna obejmować bazę danych **i** pliki aplikacji. Synchronizacja do
-t ego samego dysku nie jest kopią zapasową; trzymaj co najmniej jedną kopię na
-innym nośniku lub w innej lokalizacji. Regularnie sprawdzaj, czy da się ją
-odtworzyć.
+Kopia powinna obejmować bazę danych **i** pliki aplikacji. Samo kopiowanie
+lub synchronizowanie na ten sam dysk nie stanowi kopii zapasowej; trzymaj co
+najmniej jedną kopię na innym nośniku lub w innej lokalizacji. Regularnie
+sprawdzaj, czy da się ją odtworzyć.
 
 ## Nextcloud
 
