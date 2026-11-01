@@ -53,7 +53,12 @@ Dla publicznych hostnames kreator dołącza `acme-companion` do `nginx-proxy`
 i ustawia `LETSENCRYPT_HOST`. Przed pierwszym startem ustaw DNS i router:
 przekieruj tylko TCP `80/443` na LAN-owy adres serwera. HTTP-01 wymaga
 osiągalnego portu 80; jeśli używasz rekordu AAAA, host musi być osiągalny po
-IPv6. DDNS nie omija CGNAT ani blokad ISP. Sprawdź dostęp z zewnętrznej sieci.
+IPv6.
+
+Niektórzy dostawcy DDNS wymagają dodatkowej konfiguracji na routerze (np.
+wbudowanego klienta DDNS z loginem i nazwą hosta). Kreator jej nie wykonuje;
+sprawdź dokumentację dostawcy i modelu routera. DDNS nie omija CGNAT ani
+blokad ISP. Sprawdź dostęp z zewnętrznej sieci.
 
 Usługi webowe dostają własny wpis `VIRTUAL_HOST`, a publiczne również
 `LETSENCRYPT_HOST`; `nginx-proxy` generuje routing dynamicznie z metadanych
@@ -83,8 +88,8 @@ LAN/VPN, a w trybie publicznym pozostawia bez hosta i certyfikatu.
 - Pliki `.env` zawierają sekrety i są ustawiane jako `600`; nigdy nie
   publikuj ich, nie dodawaj do zgłoszeń i nie wklejaj do logów.
 - Kreator nie konfiguruje konta Cloudflare/DuckDNS, publicznych DNS dla
-  stałego adresu, przekierowań portów routera, weryfikacji domeny ani
-  poprawnych ustawień reverse proxy wewnątrz aplikacji.
+  stałego adresu, przekierowań portów routera, klienta DDNS w routerze,
+  weryfikacji domeny ani poprawnych ustawień reverse proxy wewnątrz aplikacji.
 - Minecraft pozostaje wyłączony, dopóki administrator nie zaakceptuje EULA.
   Kreator wymaga jawnego potwierdzenia i whitelisty.
 - Kreator nie usuwa usług ani danych. Zmiany w istniejących usługach wykonuj
