@@ -35,6 +35,31 @@ Nie wszystkie usługi mogą lub powinny być kierowane przez reverse proxy:
 Samba, MQTT i Minecraft używają innych protokołów, a Home Assistant działa
 w trybie host.
 
+### Usługi dostępne w kreatorze
+
+- **Nextcloud** — pliki, kalendarz i współpraca; z PostgreSQL i Redis.
+- **Immich** — zdjęcia i wideo.
+- **nginx-proxy** — routing domen/subdomen do usług HTTP; dla publicznego
+  HTTPS używa companion ACME.
+- **DDNS DuckDNS / Cloudflare** — aktualizacja rekordu DNS przy zmiennym IP.
+- **Home Assistant, Mosquitto MQTT i Zigbee2MQTT** — automatyka domowa;
+  Zigbee2MQTT wymaga koordynatora.
+- **Jellyfin** — odtwarzanie własnych multimediów.
+- **WordPress** — strona lub blog z osobną bazą.
+- **Euro-Office** — edycja dokumentów z Nextcloud.
+- **Samba** — udziały plików w zaufanej sieci lokalnej.
+- **Minecraft** — serwer gry; uruchomienie wymaga zaakceptowania EULA.
+- **WUD** — upstreamowy panel monitorujący wersje obrazów kontenerów.
+- **Django** — nie jest gotową aplikacją tego startera; własne aplikacje
+  Django (np. prywatne KADR i Planszownia) powinny być wdrażane z ich
+  własnych repozytoriów i Compose/Dockerfile, po dołączeniu do sieci proxy.
+
+WUD nie jest własnym mechanizmem akceptowania aktualizacji przez e-mail.
+Oddzielny projekt [Homelab Container Updater](https://github.com/mmalmon/homelab-container-updater)
+wysyła jednorazowy link i wymaga hasła przed wykonaniem aktualizacji. Ma
+dostęp hosta do Docker API, więc jest opcjonalny i wymaga niezależnych kopii
+zapasowych; jego ograniczenia opisuje osobne repozytorium.
+
 Przed instalacją sprawdź źródła producentów: [Nextcloud](https://nextcloud.com/)
 i jego [dokumentację](https://docs.nextcloud.com/server/latest/admin_manual/),
 [Immich](https://immich.app/) i jego [dokumentację](https://docs.immich.app/),
