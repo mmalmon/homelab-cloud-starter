@@ -42,9 +42,12 @@ docker compose ps
 Otwórz <http://localhost:8080>. Konto administratora powstaje z wartości
 `NEXTCLOUD_ADMIN_USER` i `NEXTCLOUD_ADMIN_PASSWORD`.
 
-Żeby używać Nextcloud z innego urządzenia w zaufanej sieci LAN, ustaw
-`BIND_ADDRESS=0.0.0.0`, dodaj adres serwera do `NEXTCLOUD_TRUSTED_DOMAINS`
-i ogranicz dostęp zaporą do swojej sieci. Nie przekierowuj portu 8080
+Żeby używać Nextcloud z innego urządzenia w zaufanej sieci LAN, dodaj adres
+serwera do `NEXTCLOUD_TRUSTED_DOMAINS` i rozważ reverse proxy. Jeśli
+publikujesz port bezpośrednio, ustaw `BIND_ADDRESS` na adres LAN serwera,
+nie na `0.0.0.0`, i pamiętaj, że porty Dockera mogą omijać reguły UFW.
+Przeczytaj [poradnik firewalla](docs/ubuntu-docker-cockpit.md#3-ufw--firewall-hosta)
+i sprawdź dostęp z innego urządzenia. Nigdy nie przekierowuj portu 8080
 bezpośrednio z Internetu.
 
 ## Opcjonalnie: Immich
