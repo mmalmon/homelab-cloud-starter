@@ -41,7 +41,9 @@ w trybie host.
 - **Immich** — zdjęcia i wideo.
 - **nginx-proxy** — routing domen/subdomen do usług HTTP; dla publicznego
   HTTPS używa companion ACME.
-- **DDNS DuckDNS / Cloudflare** — aktualizacja rekordu DNS przy zmiennym IP.
+- **DDNS DuckDNS / Cloudflare** — aktualizacja rekordu DNS przy zmiennym IP;
+  niektórzy dostawcy DDNS wymagają też konfiguracji na routerze, której
+  kreator nie wykonuje.
 - **Home Assistant, Mosquitto MQTT i Zigbee2MQTT** — automatyka domowa;
   Zigbee2MQTT wymaga koordynatora.
 - **Jellyfin** — odtwarzanie własnych multimediów.
@@ -50,9 +52,10 @@ w trybie host.
 - **Samba** — udziały plików w zaufanej sieci lokalnej.
 - **Minecraft** — serwer gry; uruchomienie wymaga zaakceptowania EULA.
 - **WUD** — upstreamowy panel monitorujący wersje obrazów kontenerów.
-- **Django** — nie jest gotową aplikacją tego startera; własne aplikacje
-  Django (np. prywatne KADR i Planszownia) powinny być wdrażane z ich
-  własnych repozytoriów i Compose/Dockerfile, po dołączeniu do sieci proxy.
+- **Django** — zamiennik WordPressa, gdy zamiast gotowego CMS wolisz własną
+  stronę lub aplikację WWW. Starter nie zawiera kontenera Django: wdróż swój
+  projekt z własnym Dockerfile/Compose, dołącz go do sieci `homelab-proxy`
+  i ustaw `VIRTUAL_HOST`, tak jak w `containers/wordpress/`.
 
 WUD nie jest własnym mechanizmem akceptowania aktualizacji przez e-mail.
 Oddzielny projekt [Homelab Container Updater](https://github.com/mmalmon/homelab-container-updater)
@@ -184,7 +187,7 @@ Przed aktualizacją lub zmianą ścieżek zrób i sprawdź kopię zapasową. Zob
 Zobacz [pełną mapę homelaba i źródła projektów](docs/homelab-map.md),
 [poradnik Ubuntu Server, Docker i Cockpit](docs/ubuntu-docker-cockpit.md)
 oraz [opis dysków RAID i kopii zapasowych](docs/storage-and-raid.md).
-Niestandardowe aplikacje, w tym KADR i Planszownia, celowo pozostają odrębnymi
+Własne aplikacje, w tym oparte o Django, celowo pozostają odrębnymi
 projektami — repozytorium nie kopiuje ani nie publikuje ich kodu.
 
 ## Wsparcie
