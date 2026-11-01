@@ -25,11 +25,20 @@ Reverse proxy [`nginx-proxy`](docs/nginx-proxy.md) działa jako kontener:
 DNS wskazuje serwer, a proxy kieruje żądanie domeny/subdomeny do właściwej
 usługi webowej w Dockerze.
 
+Gotowe przykładowe pliki Compose dla pozostałych usług znajdują się w
+[`stacks/`](stacks/). Każda usługa ma osobny katalog i własne dane; uruchamiaj
+tylko potrzebne stosy. [Instrukcja uruchamiania stosów](docs/compose-stacks.md)
+opisuje wspólną sieć proxy, zmienne domen i ograniczenia sieciowe. Nie wszystkie
+usługi mogą lub powinny być kierowane przez reverse proxy: Samba, MQTT i
+Minecraft używają innych protokołów, a Home Assistant działa w trybie host.
+
 Przed instalacją sprawdź źródła producentów: [Nextcloud](https://nextcloud.com/)
 i jego [dokumentację](https://docs.nextcloud.com/server/latest/admin_manual/),
 [Immich](https://immich.app/) i jego [dokumentację](https://docs.immich.app/),
-a także dokumentację programu, którego wdrażasz. Compose w tym repozytorium
-nie instaluje wszystkich usług wymienionych na mapie.
+a także dokumentację programu, którego wdrażasz. Konfiguracje w `stacks/` są
+niezależnymi przykładami, a nie jednym produkcyjnym wdrożeniem. Przed
+uruchomieniem ustaw lokalne ścieżki, hasła, urządzenia i porty zgodnie ze
+swoim serwerem.
 
 ## Szybki start: Nextcloud
 

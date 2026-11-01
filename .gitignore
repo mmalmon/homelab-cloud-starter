@@ -2,7 +2,9 @@
 .env.*
 !.env.example
 data/
+**/data/
 backups/
+stacks/mqtt/config/passwd
 *.log
 *.sql
 *.sql.gz

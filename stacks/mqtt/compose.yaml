@@ -1,0 +1,18 @@
+name: homelab-mqtt
+
+services:
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: mqtt
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${MQTT_PORT:-1883}:1883"
+    volumes:
+      - ./config:/mosquitto/config:ro
+      - ./data:/mosquitto/data
+    networks:
+      - mqtt
+
+networks:
+  mqtt:
+    name: homelab-mqtt

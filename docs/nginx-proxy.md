@@ -36,6 +36,16 @@ Nie musisz wystawiać portu każdej aplikacji na hosta, jeśli proxy może
 połączyć się z nią w sieci Docker. Szczegóły konfiguracji, sieci, zmiennych
 i wymagań obrazu sprawdź w [oficjalnym README nginx-proxy](https://github.com/nginx-proxy/nginx-proxy#usage).
 
+Repozytorium zawiera gotowy stos proxy w
+[`stacks/reverse-proxy/compose.yaml`](../stacks/reverse-proxy/compose.yaml),
+przykładowy plik zmiennych oraz osobny override do Nextcloud/Immich.
+WordPress, Jellyfin, Zigbee2MQTT i Euro-Office mają własne zmienne hosta
+`VIRTUAL_HOST`/`LETSENCRYPT_HOST` w swoich stosach. Hostname'y w przykładach
+pozostawiono puste: ustaw własne domeny dopiero po konfiguracji DNS. Proxy
+obserwuje kontenery i generuje routing dynamicznie, więc nie wymaga osobnego
+statycznego bloku `server` dla każdego hosta. Instrukcja jest w
+[osobnych stosach Compose](compose-stacks.md).
+
 ## Publiczny stały adres IP i DDNS
 
 Przy **stałym publicznym IP** ustaw rekord `A` własnej domeny na publiczny
@@ -71,6 +81,9 @@ uwierzytelniania aplikacji ani aktualizacji.
 - Wystawiaj przez proxy tylko potrzebne usługi webowe. Nie kieruj w ten
   sposób publicznie do Cockpit, baz danych, MQTT, SMB ani paneli
   administracyjnych bez odrębnego, świadomego projektu dostępu.
+- Home Assistant w trybie host, MQTT, Samba i Minecraft nie są usługami HTTP
+  routowanymi przez ten proxy. WUD pozostaje związany z loopback; dostęp
+  administracyjny realizuj przez VPN.
 - Dostęp do socketu/API Dockera używany do wykrywania kontenerów jest
   wrażliwym uprawnieniem. Ogranicz go do zaufanych komponentów i nie montuj
   socketu Docker w niezaufanych kontenerach.
