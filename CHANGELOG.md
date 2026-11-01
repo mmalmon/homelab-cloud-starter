@@ -7,3 +7,4 @@
 - Updater instalowany przez kreator (SMTP, hasło zatwierdzania, timery systemd); kod w `containers/updater`.
 - Usunięto główny compose i `stacks/` — źródłem są `containers/` i kreator.
 - Dodano CI, Makefile, SECURITY i CONTRIBUTING.
+- Dodano `.editorconfig`, `containers/django/.dockerignore` oraz reguły `.gitignore` dla `state/` i cache testów.

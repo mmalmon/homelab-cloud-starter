@@ -7,6 +7,9 @@
 data/
 **/data/
 backups/
+state/
+**/state/
+.pytest_cache/
 containers/mqtt/config/passwd
 .homelab-state.json
 __pycache__/
