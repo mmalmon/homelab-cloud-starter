@@ -58,17 +58,19 @@ Nie wyłączaj uwierzytelniania hasłem, dopóki nie potwierdzisz dostępu klucz
 i nie zachowasz działającej sesji administracyjnej. Zmiany SSH mogą odciąć
 zdalny dostęp, jeśli klucz lub konfiguracja są błędne.
 
-## 3. UFW — firewall hosta
+## 3. Firewall UFW
 
 Najpierw dodaj wyjątki dla używanych usług, dopiero potem włącz UFW. Poniższa
-przykładowa podsieć `192.168.1.0/24` **nie jest uniwersalna** — zastąp ją
-rzeczywistą podsiecią LAN. Jeśli SSH używa innego portu, zmień `22`.
+wartość `192.0.2.0/24` jest zarezerwowana do przykładów i **nie jest Twoją
+podsiecią LAN** — zastąp ją rzeczywistą podsiecią. Jeśli SSH używa innego
+portu, zmień `22`.
 
 ```bash
+LAN_CIDR="192.0.2.0/24"  # zastąp adresem swojej podsieci LAN
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
-sudo ufw allow from 192.168.1.0/24 to any port 22 proto tcp
-sudo ufw allow from 192.168.1.0/24 to any port 9090 proto tcp
+sudo ufw allow from "$LAN_CIDR" to any port 22 proto tcp
+sudo ufw allow from "$LAN_CIDR" to any port 9090 proto tcp
 sudo ufw enable
 sudo ufw status verbose
 ```
@@ -79,7 +81,7 @@ Internetu. Jeśli nie używasz SSH lub Cockpit, pomiń odpowiadającą im reguł
 Zanim aktywujesz UFW przez SSH, upewnij się, że reguła SSH pasuje do klienta,
 inaczej możesz utracić dostęp.
 
-### Ważne: UFW nie filtruje automatycznie opublikowanych portów Dockera
+### 3.1 UFW a opublikowane porty Dockera
 
 Docker tworzy własne reguły sieciowe. Ruch do portów opublikowanych przez
 Compose może zostać przekierowany **przed regułami UFW**, więc samo
