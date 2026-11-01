@@ -19,8 +19,8 @@ jedno z poniższych:
 W trybie „DDNS” kreator na końcu pyta, czy zainstalować klienta (`ddclient`
 lub `inadyn`) albo pominąć ten krok. Dla wybranego dostawcy prosi o dane
 logowania (token wpisywany bez echa), instaluje pakiet systemowy, zapisuje
-konfigurację z uprawnieniami `600` (`/etc/ddclient.conf`,
-`/etc/ddclient/ddclient.conf` na Fedorze lub `/etc/inadyn.conf`) i włącza
+konfigurację z uprawnieniami `600` (`/etc/ddclient.conf` (Debian, openSUSE, RHEL),
+`/etc/ddclient/ddclient.conf` na Fedorze i Archu lub `/etc/inadyn.conf`) i włącza
 usługę. Aktualizowane są hostnames wybranych usług webowych.
 
 - **DuckDNS:** każdy hostname musi mieć postać `nazwa.duckdns.org` (bez
@@ -29,6 +29,10 @@ usługę. Aktualizowane są hostnames wybranych usług webowych.
   `Zone:DNS:Edit` oraz `Zone:Zone:Read` — nie używaj globalnego klucza.
 - **No-IP:** login i hasło/klucz DDNS (nie hasło konta, jeśli dostawca oferuje
   osobne dane dla klienta).
+
+`ddclient` instaluje się na Debianie/Ubuntu, Fedorze, RHEL (z EPEL), Archu i
+openSUSE; `inadyn` tylko na Debianie/Ubuntu i Fedorze (brak pakietu w Arch i
+openSUSE). Na innych systemach skonfiguruj klienta ręcznie.
 
 Kreator nie weryfikuje konta ani poprawności nazw u dostawcy. Sprawdź logi:
 `journalctl -u ddclient` lub `journalctl -u inadyn`.

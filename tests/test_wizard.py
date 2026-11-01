@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "wizard"))
 
 import ddns_client
+import distro
 import updater_setup
 import homelab_wizard as wizard
 
@@ -275,6 +276,70 @@ class FlowOrderTests(unittest.TestCase):
         ), patch.object(wizard, "select_services", side_effect=select), patch("sys.stderr"):
             self.assertEqual(wizard.main([]), 1)
         self.assertEqual(calls, ["choose_network", "select_services"])
+
+
+class DistroTests(unittest.TestCase):
+    def test_family_detection_uses_id_and_id_like(self):
+        cases = {
+            ("ubuntu", ""): "debian", ("debian", ""): "debian", ("linuxmint", "ubuntu debian"): "debian",
+            ("pop", "ubuntu debian"): "debian", ("raspbian", "debian"): "debian",
+            ("fedora", ""): "fedora", ("nobara", "fedora"): "fedora",
+            ("rocky", "rhel centos fedora"): "rhel", ("almalinux", "rhel centos fedora"): "rhel",
+            ("rhel", "fedora"): "rhel", ("centos", "rhel fedora"): "rhel",
+            ("arch", ""): "arch", ("manjaro", "arch"): "arch", ("endeavouros", "arch"): "arch",
+            ("opensuse-tumbleweed", "opensuse suse"): "suse", ("sles", "suse"): "suse",
+            ("alpine", ""): "", ("gentoo", ""): "",
+        }
+        for (distro_id, like), expected in cases.items():
+            self.assertEqual(distro.family({"ID": distro_id, "ID_LIKE": like}), expected, distro_id)
+
+    def install_calls(self, os_info):
+        with patch.object(wizard, "privileged") as privileged, patch.object(
+            wizard.subprocess, "check_output", return_value="amd64\n"
+        ), patch.object(wizard, "confirm", return_value=True):
+            wizard.install_packages(os_info)
+        return [call.args[0] for call in privileged.call_args_list]
+
+    def test_arch_uses_pacman_with_docker_compose_and_cockpit(self):
+        calls = self.install_calls({"ID": "manjaro", "ID_LIKE": "arch"})
+        self.assertTrue(any(c[:2] == ["pacman", "-Syu"] and "docker-compose" in c and "cockpit" in c for c in calls))
+        self.assertIn(["systemctl", "enable", "--now", "docker"], calls)
+
+    def test_suse_uses_zypper(self):
+        calls = self.install_calls({"ID": "opensuse-leap", "ID_LIKE": "suse opensuse"})
+        self.assertTrue(any(c[0] == "zypper" and "docker-compose" in c for c in calls))
+
+    def test_rocky_uses_centos_docker_repo_with_add_repo(self):
+        calls = self.install_calls({"ID": "rocky", "ID_LIKE": "rhel centos fedora"})
+        self.assertIn(
+            ["dnf", "config-manager", "--add-repo", "https://download.docker.com/linux/centos/docker-ce.repo"], calls
+        )
+
+    def test_mint_uses_ubuntu_repo_and_ubuntu_codename(self):
+        info = {"ID": "linuxmint", "ID_LIKE": "ubuntu debian", "UBUNTU_CODENAME": "noble", "VERSION_CODENAME": "wilma"}
+        self.assertEqual(distro.docker_apt_repo(info), ("ubuntu", "noble"))
+        calls = self.install_calls(info)
+        self.assertTrue(any("docker.asc" in " ".join(c) and "linux/ubuntu/gpg" in " ".join(c) for c in calls))
+
+    def test_unsupported_distribution_gets_clear_error(self):
+        with self.assertRaises(wizard.WizardError):
+            wizard.install_packages({"ID": "alpine"})
+
+    def test_ddns_client_install_per_family(self):
+        calls = []
+        privileged = lambda cmd, **_: calls.append(cmd)
+        ddns_client.install_client("ddclient", "arch", privileged)
+        ddns_client.install_client("ddclient", "suse", privileged)
+        ddns_client.install_client("ddclient", "rhel", privileged)
+        self.assertIn(["pacman", "-S", "--noconfirm", "--needed", "ddclient"], calls)
+        self.assertIn(["zypper", "--non-interactive", "install", "ddclient"], calls)
+        self.assertIn(["dnf", "install", "-y", "epel-release"], calls)
+        self.assertEqual(str(ddns_client.config_path("ddclient", "rhel")), "/etc/ddclient.conf")
+        self.assertEqual(str(ddns_client.config_path("ddclient", "arch")), "/etc/ddclient/ddclient.conf")
+        with self.assertRaises(ddns_client.DdnsError):
+            ddns_client.install_client("inadyn", "arch", privileged)
+        with self.assertRaises(ddns_client.DdnsError):
+            ddns_client.collect(["a.example.org"], lambda *_: "2", "arch")
 
 
 if __name__ == "__main__":

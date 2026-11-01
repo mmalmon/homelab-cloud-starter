@@ -11,7 +11,7 @@ i [zasadami bezpieczeństwa](docs/security.md).**
 
 ## Szybki start
 
-Na nowym hoście Ubuntu/Debian lub Fedora (przygotowanie serwera opisuje
+Na nowym hoście z Ubuntu/Debianem, Fedorą, RHEL (Rocky, Alma), Archem lub openSUSE (przygotowanie serwera opisuje
 [poradnik Ubuntu Server + Docker + Cockpit + firewall](docs/ubuntu-docker-cockpit.md)):
 
 ```bash

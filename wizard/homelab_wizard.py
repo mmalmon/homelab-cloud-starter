@@ -17,6 +17,7 @@ import tempfile
 from pathlib import Path
 
 import ddns_client
+import distro
 import updater_setup
 
 
@@ -144,13 +145,9 @@ def privileged(command: list[str], *, check: bool = True) -> subprocess.Complete
 
 
 def install_packages(os_info: dict[str, str]) -> None:
-    distro = os_info.get("ID", "").lower()
-    if distro in {"ubuntu", "debian"}:
-        repo_distro = distro
-        codename = (
-            os_info.get("UBUNTU_CODENAME")
-            or os_info.get("VERSION_CODENAME")
-        )
+    family = distro.family(os_info)
+    if family == "debian":
+        repo_distro, codename = distro.docker_apt_repo(os_info)
         if not codename:
             raise WizardError("Nie udało się odczytać nazwy wydania systemu.")
         privileged(["apt-get", "update"])
@@ -189,10 +186,14 @@ def install_packages(os_info: dict[str, str]) -> None:
         privileged(["systemctl", "enable", "--now", "cockpit.socket"])
         return
 
-    if distro == "fedora":
+    if family in {"fedora", "rhel"}:
         privileged(["dnf", "install", "-y", "dnf-plugins-core", "cockpit", "firewalld", "curl"])
-        repo = "https://download.docker.com/linux/fedora/docker-ce.repo"
-        privileged(["dnf", "config-manager", "addrepo", f"--from-repofile={repo}"])
+        repo_name = "fedora" if family == "fedora" else distro.docker_rpm_repo(os_info)
+        repo = f"https://download.docker.com/linux/{repo_name}/docker-ce.repo"
+        if family == "fedora":
+            privileged(["dnf", "config-manager", "addrepo", f"--from-repofile={repo}"])
+        else:
+            privileged(["dnf", "config-manager", "--add-repo", repo])
         privileged([
             "dnf", "install", "-y", "docker-ce", "docker-ce-cli", "containerd.io",
             "docker-buildx-plugin", "docker-compose-plugin",
@@ -202,8 +203,23 @@ def install_packages(os_info: dict[str, str]) -> None:
         privileged(["systemctl", "enable", "--now", "firewalld"])
         return
 
+    if family == "arch":
+        # Arch has no supported partial upgrades, so refresh and upgrade together.
+        privileged(["pacman", "-Syu", "--noconfirm", "--needed", "docker", "docker-compose", "cockpit", "ufw", "curl"])
+        privileged(["systemctl", "enable", "--now", "docker"])
+        privileged(["systemctl", "enable", "--now", "cockpit.socket"])
+        return
+
+    if family == "suse":
+        privileged(["zypper", "--non-interactive", "install", "docker", "docker-compose", "cockpit", "firewalld", "curl"])
+        privileged(["systemctl", "enable", "--now", "docker"])
+        privileged(["systemctl", "enable", "--now", "cockpit.socket"])
+        privileged(["systemctl", "enable", "--now", "firewalld"])
+        return
+
+    name = os_info.get("ID", "").lower()
     raise WizardError(
-        f"Automatyczna instalacja obsługuje Ubuntu, Debian i Fedora; wykryto: {distro or 'nieznany system'}. "
+        f"Automatyczna instalacja obsługuje rodziny Debian/Ubuntu, Fedora, RHEL (Rocky, Alma), Arch i openSUSE; wykryto: {name or 'nieznany system'}. "
         "Zainstaluj Docker Engine, Compose v2 i Cockpit zgodnie z dokumentacją dystrybucji, "
         "a następnie ponownie uruchom kreator."
     )
@@ -438,8 +454,8 @@ def collect_network(
 
 
 def setup_firewall(os_info: dict[str, str], mode: str, selected: set[str], lan_cidr: str) -> None:
-    distro = os_info.get("ID", "").lower()
-    if distro in {"ubuntu", "debian"}:
+    family = distro.family(os_info)
+    if family in {"debian", "arch"}:
         if not shutil.which("ufw"):
             print("UFW nie jest zainstalowany; pomijam konfigurację firewalla.")
             return
@@ -466,7 +482,7 @@ def setup_firewall(os_info: dict[str, str], mode: str, selected: set[str], lan_c
         privileged(["ufw", "--force", "enable"])
         return
 
-    if distro == "fedora" and shutil.which("firewall-cmd"):
+    if family in {"fedora", "rhel", "suse"} and shutil.which("firewall-cmd"):
         zone = firewalld_zone_for_lan_interface()
         privileged(["firewall-cmd", "--permanent", "--zone", zone, "--add-service=ssh"])
         if lan_cidr:
@@ -660,7 +676,7 @@ def main(argv: list[str] | None = None) -> int:
                 if name in WEB_ENV and values.get(WEB_ENV[name][1])
             })
             if public_hosts:
-                ddns_plan = ddns_client.collect(public_hosts, ask)
+                ddns_plan = ddns_client.collect(public_hosts, ask, distro.family(os_info))
 
         lan_cidr = ask("Zaufana podsieć LAN dla Cockpit/HA/SMB (CIDR; Enter pomija ograniczone reguły)", "")
         if lan_cidr:
@@ -676,7 +692,7 @@ def main(argv: list[str] | None = None) -> int:
 
         if ddns_plan:
             client, provider, creds = ddns_plan
-            path = ddns_client.apply(client, provider, public_hosts, creds, os_info.get("ID", "").lower(), privileged)
+            path = ddns_client.apply(client, provider, public_hosts, creds, distro.family(os_info), privileged)
             print(f"Klient DDNS {client} zainstalowany; konfiguracja: {path} (chmod 600).")
             print("Uwaga: klient aktualizuje tylko rekord DNS. Router nadal może wymagać przekierowania")
             print("portów 80/443, reguł NAT/firewalla, a przy CGNAT publicznego adresu lub VPN.")

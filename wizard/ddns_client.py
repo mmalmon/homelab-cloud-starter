@@ -91,23 +91,40 @@ def render_inadyn(provider: str, hostnames: list[str], creds: dict[str, str]) ->
     return f"period = 300\n\nprovider {name} {{\n{body}    hostname = {hosts}\n}}\n"
 
 
-def config_path(client: str, distro: str) -> Path:
+# Distribution families (wizard/distro.py) where the package is available.
+SUPPORTED = {
+    "ddclient": {"debian", "fedora", "rhel", "arch", "suse"},
+    "inadyn": {"debian", "fedora"},
+}
+
+
+def config_path(client: str, family: str) -> Path:
     if client == "ddclient":
-        return Path("/etc/ddclient/ddclient.conf" if distro == "fedora" else "/etc/ddclient.conf")
+        return Path("/etc/ddclient.conf" if family in {"debian", "suse", "rhel"} else "/etc/ddclient/ddclient.conf")
     return Path("/etc/inadyn.conf")
 
 
 def install_client(
     client: str,
-    distro: str,
+    family: str,
     privileged: Callable[..., subprocess.CompletedProcess[str]],
 ) -> None:
-    if distro in {"ubuntu", "debian"}:
+    if family not in SUPPORTED.get(client, set()):
+        raise DdnsError(
+            f"{client} nie jest instalowany automatycznie na tej dystrybucji; "
+            "wybierz ddclient albo zainstaluj klienta ręcznie (zob. docs/ddns.md)."
+        )
+    if family == "debian":
         privileged(["env", "DEBIAN_FRONTEND=noninteractive", "apt-get", "install", "-y", client])
-    elif distro == "fedora":
+    elif family == "rhel":
+        privileged(["dnf", "install", "-y", "epel-release"])
         privileged(["dnf", "install", "-y", client])
+    elif family == "fedora":
+        privileged(["dnf", "install", "-y", client])
+    elif family == "arch":
+        privileged(["pacman", "-S", "--noconfirm", "--needed", client])
     else:
-        raise DdnsError("Instalacja klienta DDNS jest obsługiwana na Ubuntu, Debianie i Fedorze.")
+        privileged(["zypper", "--non-interactive", "install", client])
 
 
 def write_config(path: Path, text: str, privileged: Callable[..., subprocess.CompletedProcess[str]]) -> None:
@@ -125,6 +142,7 @@ def write_config(path: Path, text: str, privileged: Callable[..., subprocess.Com
 def collect(
     hostnames: list[str],
     ask: Callable[[str, str], str],
+    family: str = "debian",
 ) -> tuple[str, str, dict[str, str]] | None:
     print("\nKlient DDNS na hoście (opcjonalnie; kreator nie instaluje DDNS w Dockerze):")
     print("  1. ddclient\n  2. inadyn\n  3. Pomiń (DDNS skonfigurowany w routerze/u dostawcy)")
@@ -134,6 +152,8 @@ def collect(
     if choice not in {"1", "2"}:
         raise DdnsError("Nieprawidłowy wybór klienta DDNS.")
     client = "ddclient" if choice == "1" else "inadyn"
+    if family not in SUPPORTED[client]:
+        raise DdnsError(f"{client} nie jest dostępny dla tej dystrybucji; wybierz ddclient lub pomiń ten krok.")
     names = list(PROVIDERS)
     for number, name in enumerate(names, 1):
         print(f"  {number}. {PROVIDERS[name]}")
@@ -166,12 +186,12 @@ def apply(
     provider: str,
     hostnames: list[str],
     creds: dict[str, str],
-    distro: str,
+    family: str,
     privileged: Callable[..., subprocess.CompletedProcess[str]],
 ) -> Path:
     text = render(client, provider, hostnames, creds)
-    install_client(client, distro, privileged)
-    path = config_path(client, distro)
+    install_client(client, family, privileged)
+    path = config_path(client, family)
     write_config(path, text, privileged)
     privileged(["systemctl", "enable", "--now", client])
     privileged(["systemctl", "restart", client])

@@ -31,12 +31,25 @@ domenami nowej usługi.
 
 ## Instalacja hosta
 
-Kreator wspiera automatyczną instalację na Ubuntu, Debianie i Fedorze:
+Kreator rozpoznaje rodzinę dystrybucji z `ID` i `ID_LIKE` w `/etc/os-release`:
+
+| Rodzina | Przykłady | Docker i Compose v2 | Firewall |
+|---|---|---|---|
+| Debian | Ubuntu, Debian, Linux Mint, Pop!_OS, Raspberry Pi OS | repozytorium Dockera (`apt`) | UFW |
+| Fedora | Fedora | repozytorium Dockera (`dnf`) | firewalld |
+| RHEL | RHEL, Rocky, AlmaLinux, CentOS Stream | repozytorium Dockera `rhel`/`centos` (`dnf`) | firewalld |
+| Arch | Arch, Manjaro, EndeavourOS | pakiety `docker`, `docker-compose` (`pacman -Syu`) | UFW |
+| openSUSE | Leap, Tumbleweed, SLES | pakiety `docker`, `docker-compose` (`zypper`) | firewalld |
+
+Inne systemy (np. Alpine, Gentoo, NixOS) kończą się komunikatem — zainstaluj
+Docker Engine, Compose v2 i Cockpit ręcznie, a potem uruchom kreator ponownie.
+Nazwy pakietów Arch, openSUSE i Rocky sprawdzono w kontenerach, ale pełny
+przebieg kreatora testowano tylko jednostkowo; dystrybucje inne niż
+Ubuntu/Debian/Fedora traktuj jako mniej sprawdzone.
 
 - Docker Engine i plugin Docker Compose v2 pochodzą z oficjalnego
-  repozytorium Dockera.
+  repozytorium Dockera lub z pakietów dystrybucji (Arch, openSUSE).
 - Instaluje Cockpit i włącza gniazdo `cockpit.socket`.
-- Na Ubuntu/Debianie instaluje UFW; na Fedorze korzysta z firewalld.
 - Reguły firewalld przypisuje do strefy interfejsu używanego przez trasę LAN,
   a jeśli nie da się go ustalić — do strefy domyślnej.
 - Nie dodaje użytkownika do grupy `docker`, ponieważ daje ona uprawnienia
