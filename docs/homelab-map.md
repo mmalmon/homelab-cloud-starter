@@ -21,8 +21,7 @@ wdrażaj osobnymi, świadomie skonfigurowanymi stosami.
 RAID zwiększa dostępność tylko w granicach odporności wybranego poziomu. Nie
 chroni przed skasowaniem plików, ransomware, błędem administratora, kradzieżą,
 pożarem ani awarią całej macierzy. Dyski RAID mogą też ulec awarii podczas
-odbudowy. Przeczytaj sekcję [RAID i dyski z danymi](ubuntu-docker-cockpit.md#7-dyski-z-danymi-i-raid)
-przed planowaniem nowego serwera.
+odbudowy. Zobacz [opis RAID i kopii zapasowych](storage-and-raid.md).
 
 ## Sieć, domeny i dostęp z Internetu
 

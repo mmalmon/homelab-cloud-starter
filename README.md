@@ -14,6 +14,20 @@ Konfiguracja jest szablonem: nie zawiera ustawień konkretnego serwera, prywatny
 - Docker Compose v2 (`docker compose`);
 - dla zdjęć: wolne miejsce na bibliotekę oraz bazę Immich.
 
+## Pełny homelab i źródła
+
+Starter uruchamia Nextcloud i opcjonalnie Immich, ale pełny homelab może
+obejmować również reverse proxy i TLS, Home Assistant z MQTT i Zigbee2MQTT,
+WordPress, Jellyfin, Euro-Office, Sambę, Minecraft oraz monitoring aktualizacji.
+Rola tych usług, wymagania sieciowe, RAID/kopie zapasowe i linki do oficjalnych
+dokumentacji są zebrane w [pełnej mapie homelaba](docs/homelab-map.md).
+
+Przed instalacją sprawdź źródła producentów: [Nextcloud](https://nextcloud.com/)
+i jego [dokumentację](https://docs.nextcloud.com/server/latest/admin_manual/),
+[Immich](https://immich.app/) i jego [dokumentację](https://docs.immich.app/),
+a także dokumentację programu, którego wdrażasz. Compose w tym repozytorium
+nie instaluje wszystkich usług wymienionych na mapie.
+
 ## Szybki start: Nextcloud
 
 Przygotowujesz nowy serwer? Zacznij od poradnika
@@ -103,10 +117,11 @@ Przed aktualizacją lub zmianą ścieżek zrób i sprawdź kopię zapasową. Zob
 
 ## Układ przykładowego homelaba
 
-Zarys ról usług i decyzji, które należy dopasować do własnego sprzętu, znajduje
-się w [mapie homelaba](docs/homelab-map.md). Niestandardowe aplikacje, w tym
-KADR i Planszownia, celowo pozostają odrębnymi projektami — repozytorium nie
-kopiuje ani nie publikuje ich kodu.
+Zobacz [pełną mapę homelaba i źródła projektów](docs/homelab-map.md),
+[poradnik Ubuntu Server, Docker i Cockpit](docs/ubuntu-docker-cockpit.md)
+oraz [opis dysków RAID i kopii zapasowych](docs/storage-and-raid.md).
+Niestandardowe aplikacje, w tym KADR i Planszownia, celowo pozostają odrębnymi
+projektami — repozytorium nie kopiuje ani nie publikuje ich kodu.
 
 ## Wsparcie
 
