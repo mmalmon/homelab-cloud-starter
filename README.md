@@ -21,6 +21,9 @@ obejmować również reverse proxy i TLS, Home Assistant z MQTT i Zigbee2MQTT,
 WordPress, Jellyfin, Euro-Office, Sambę, Minecraft oraz monitoring aktualizacji.
 Rola tych usług, wymagania sieciowe, RAID/kopie zapasowe i linki do oficjalnych
 dokumentacji są zebrane w [pełnej mapie homelaba](docs/homelab-map.md).
+Reverse proxy [`nginx-proxy`](docs/nginx-proxy.md) działa jako kontener:
+DNS wskazuje serwer, a proxy kieruje żądanie domeny/subdomeny do właściwej
+usługi webowej w Dockerze.
 
 Przed instalacją sprawdź źródła producentów: [Nextcloud](https://nextcloud.com/)
 i jego [dokumentację](https://docs.nextcloud.com/server/latest/admin_manual/),
