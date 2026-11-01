@@ -1,5 +1,10 @@
 # Osobne stosy Docker Compose
 
+Ta instrukcja dotyczy starszych, ręcznych przykładów w `stacks/`. Do nowego
+wdrożenia zalecany jest kreator i konfiguracje w `containers/`; nie uruchamiaj
+obu wariantów jednocześnie, ponieważ używają tych samych nazw kontenerów i
+portów.
+
 Każda usługa ma własny katalog w [`stacks/`](../stacks/). To celowy podział:
 niezależne cykle aktualizacji, urządzenia USB i tryb host Home Assistant nie
 pasują do jednego wspólnego Compose. Bazy, dane aplikacji i niewebowe
@@ -42,9 +47,9 @@ uruchomieniem utwórz plik haseł w `stacks/mqtt/config/`:
 
 ```bash
 cd stacks/mqtt
-docker run --rm -it --user 0:0 \
-  -v "$PWD/config:/mosquitto/config" \
-  --entrypoint mosquitto_passwd eclipse-mosquitto:2 \
+docker run --rm -it --user 0:0 \\
+  -v "$PWD/config:/mosquitto/config" \\
+  --entrypoint mosquitto_passwd eclipse-mosquitto:2 \\
   -c /mosquitto/config/passwd mqttuser
 sudo chown 1883:1883 config/passwd
 sudo chmod 640 config/passwd
@@ -54,7 +59,8 @@ docker compose up -d
 ```
 
 W stosie Zigbee2MQTT skopiuj `.env.example`, ustaw ścieżkę `/dev/serial/by-id`
-i uruchom usługę. Pierwszą konfigurację koordynatora i brokera MQTT wykonaj
+i uruchom usługę. Kreator z `containers/` dodatkowo sprawdza, czy wskazano
+istniejące urządzenie znakowe. Pierwszą konfigurację koordynatora i brokera MQTT wykonaj
 w kreatorze Zigbee2MQTT; jako adres brokera użyj `mqtt://mqtt:1883`, a dane
 logowania zgodne z utworzonym kontem. Home Assistant używa host networking,
 więc z jego integracji MQTT łączy się do `127.0.0.1:1883` na hoście. Pamiętaj,
@@ -98,9 +104,9 @@ je do tego samego proxy, uruchom Compose z dodatkowym override:
 # Uruchom z katalogu głównego repozytorium; nie nadpisuj istniejącego .env.
 test -f .env || cp .env.example .env
 # Ustaw sekrety oraz NEXTCLOUD_HOST/IMMICH_HOST i LETSENCRYPT_EMAIL.
-docker compose --env-file .env -f compose.yaml \
+docker compose --env-file .env -f compose.yaml \\
   -f stacks/reverse-proxy/nextcloud.override.yaml config --quiet
-docker compose --env-file .env -f compose.yaml \
+docker compose --env-file .env -f compose.yaml \\
   -f stacks/reverse-proxy/nextcloud.override.yaml up -d
 ```
 
@@ -116,7 +122,7 @@ CGNAT może uniemożliwić takie połączenie.
 | Stos | Dostęp i routing |
 |---|---|
 | Nextcloud, Immich | HTTP przez `nginx-proxy` po użyciu override; lokalne porty pozostają związane z `127.0.0.1`. |
-| WordPress, Jellyfin, Zigbee2MQTT, Euro-Office | HTTP przez wspólną sieć `homelab-proxy`; hosty i TLS są opcjonalne. |
+| WordPress, Jellyfin, Zigbee2MQTT, Euro-Office | HTTP przez wspólną sieć `homelab-proxy`; hosty i TLS są opcjonalne. Kreator nie wystawia panelu administracyjnego Zigbee2MQTT publicznie. |
 | Home Assistant | Domyślnie `network_mode: host` dla discovery, więc port 8123 należy ograniczyć firewallem do LAN/VPN. Proxy wymaga osobnej konfiguracji upstream do hosta oraz ustawień `trusted_proxies` w Home Assistant. |
 | MQTT / Mosquitto | MQTT/TCP, nie HTTP; port 1883 jest domyślnie związany wyłącznie z loopback hosta. Nie dodawaj go do nginx-proxy. |
 | Samba | SMB/TCP; wystaw wyłącznie w zaufanej sieci lokalnej. Reverse proxy HTTP nie obsługuje SMB. |

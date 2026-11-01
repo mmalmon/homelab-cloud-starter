@@ -46,6 +46,10 @@ obserwuje kontenery i generuje routing dynamicznie, więc nie wymaga osobnego
 statycznego bloku `server` dla każdego hosta. Instrukcja jest w
 [osobnych stosach Compose](compose-stacks.md).
 
+Kreator korzysta z aktualnego układu `containers/` i nie wystawia panelu
+Zigbee2MQTT publicznie. Starsze przykłady `stacks/` są niezależne — nie
+uruchamiaj ich razem z kontenerami wygenerowanymi przez kreator.
+
 ## Publiczny stały adres IP i DDNS
 
 Przy **stałym publicznym IP** ustaw rekord `A` własnej domeny na publiczny

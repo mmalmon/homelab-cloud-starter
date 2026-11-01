@@ -25,12 +25,15 @@ Reverse proxy [`nginx-proxy`](docs/nginx-proxy.md) działa jako kontener:
 DNS wskazuje serwer, a proxy kieruje żądanie domeny/subdomeny do właściwej
 usługi webowej w Dockerze.
 
-Gotowe przykładowe pliki Compose dla pozostałych usług znajdują się w
-[`stacks/`](stacks/). Każda usługa ma osobny katalog i własne dane; uruchamiaj
-tylko potrzebne stosy. [Instrukcja uruchamiania stosów](docs/compose-stacks.md)
-opisuje wspólną sieć proxy, zmienne domen i ograniczenia sieciowe. Nie wszystkie
-usługi mogą lub powinny być kierowane przez reverse proxy: Samba, MQTT i
-Minecraft używają innych protokołów, a Home Assistant działa w trybie host.
+Kreator korzysta z osobnych konfiguracji w [`containers/`](containers/).
+Starsze, ręczne przykłady w [`stacks/`](stacks/) oraz główny `compose.yaml`
+pozostają dla porównania i prostego startu Nextcloud/Immich — nie uruchamiaj
+ich równolegle z nowymi stosami, bo mogą używać tych samych nazw kontenerów i
+portów. [Instrukcja uruchamiania stosów](docs/compose-stacks.md) wyjaśnia
+starszy układ, wspólną sieć proxy i ograniczenia sieciowe.
+Nie wszystkie usługi mogą lub powinny być kierowane przez reverse proxy:
+Samba, MQTT i Minecraft używają innych protokołów, a Home Assistant działa
+w trybie host.
 
 Przed instalacją sprawdź źródła producentów: [Nextcloud](https://nextcloud.com/)
 i jego [dokumentację](https://docs.nextcloud.com/server/latest/admin_manual/),
@@ -39,6 +42,30 @@ a także dokumentację programu, którego wdrażasz. Konfiguracje w `stacks/` s�
 niezależnymi przykładami, a nie jednym produkcyjnym wdrożeniem. Przed
 uruchomieniem ustaw lokalne ścieżki, hasła, urządzenia i porty zgodnie ze
 swoim serwerem.
+
+## Kreator homelaba
+
+Na nowym hoście Ubuntu/Debian lub Fedora sklonuj repozytorium, przejrzyj
+[ostrzeżenia i ograniczenia kreatora](docs/homelab-wizard.md), a następnie
+uruchom:
+
+```bash
+git clone https://github.com/mmalmon/homelab-cloud-starter.git
+cd homelab-cloud-starter
+bash ./homelab
+```
+
+Kreator może zainstalować Docker Engine, Compose v2, Cockpit i skonfigurować
+podstawowy firewall. Późniejsze uruchomienie `bash ./homelab` pozwala dodać kolejne
+stosy bez nadpisywania istniejących sekretów. Kreator pyta o wybrane usługi,
+domeny oraz statyczny publiczny adres IP albo DDNS (DuckDNS/Cloudflare), tworzy
+lokalne pliki `.env` z uprawnieniami `600` i uruchamia tylko wybrane stosy.
+
+Każda aplikacja ma osobny katalog w [`containers/`](containers/); główny
+skrypt uruchamia [kreator](wizard/homelab_wizard.py). Usługi webowe są
+dołączane do wspólnego `nginx-proxy`. Dockerfile nie jest dodawany dla
+aplikacji używających gotowych obrazów upstream — katalog zawiera go tylko,
+gdy serwis wymaga budowania własnego obrazu.
 
 ## Szybki start: Nextcloud
 
