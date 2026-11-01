@@ -69,8 +69,10 @@ i Minecraft używają innych protokołów, a Home Assistant działa w trybie hos
 link i hasło) ma pełny wzór w [containers/updater](containers/updater/README.md)
 — ten sam kod co w osobnym repozytorium
 [Homelab Container Updater](https://github.com/mmalmon/homelab-container-updater).
-Nie jest instalowany przez kreator, bo ma dostęp hosta do Docker API i wymaga
-niezależnych kopii zapasowych.
+Kreator instaluje go na życzenie (usługa `updater`): pyta o hostname, SMTP
+(serwer, nadawca, odbiorca, login, hasło wpisywane bez echa) i hasło
+zatwierdzania, a potem ustawia harmonogram systemd. Updater ma dostęp hosta
+do Docker API, więc wymaga niezależnych kopii zapasowych.
 
 ## Dokumentacja i źródła
 

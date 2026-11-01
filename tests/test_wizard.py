@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "wizard"))
 
 import ddns_client
+import updater_setup
 import homelab_wizard as wizard
 
 
@@ -161,6 +162,48 @@ class DdnsClientTests(unittest.TestCase):
 
     def test_skip_choice_installs_nothing(self):
         self.assertIsNone(ddns_client.collect(["a.example.org"], lambda *_: "3"))
+
+
+class UpdaterSetupTests(unittest.TestCase):
+    def answers(self, values):
+        it = iter(values)
+        return lambda prompt, default="": next(it) or default
+
+    def test_updater_is_a_web_wizard_service(self):
+        self.assertTrue(wizard.SERVICES["updater"][1])
+        self.assertEqual(wizard.WEB_ENV["updater"], ("UPDATER_HOST", "UPDATER_TLS_HOST"))
+        self.assertIn("updater", wizard.START_ORDER)
+
+    def test_collect_without_smtp_uses_outbox_and_https_base_url(self):
+        env = updater_setup.collect({}, "up.example.org", "up.example.org", self.answers([""]))
+        self.assertEqual(env["BASE_URL"], "https://up.example.org")
+        self.assertEqual(env["SMTP_HOST"], "")
+        self.assertEqual(env["SMTP_PASSWORD"], "")
+
+    def test_collect_with_smtp_reads_settings_and_secret_from_getpass(self):
+        answers = self.answers(["smtp.example.org", "me@example.org", "", "starttls", "", "me@example.org"])
+        with patch("updater_setup.getpass.getpass", return_value="s3cretPass"):
+            env = updater_setup.collect({}, "up.example.org", "", answers)
+        self.assertEqual(env["BASE_URL"], "http://up.example.org")
+        self.assertEqual(env["MAIL_TO"], "me@example.org")
+        self.assertEqual(env["SMTP_PORT"], "587")
+        self.assertEqual(env["SMTP_PASSWORD"], "s3cretPass")
+
+    def test_collect_rejects_plain_smtp_and_unsafe_password(self):
+        with self.assertRaises(updater_setup.UpdaterError):
+            updater_setup.collect({}, "h", "h", self.answers(["smtp.x.org", "a@x.org", "", "none"]))
+        answers = self.answers(["smtp.x.org", "a@x.org", "", "ssl", "", "login"])
+        with patch("updater_setup.getpass.getpass", return_value="bad pass"):
+            with self.assertRaises(updater_setup.UpdaterError):
+                updater_setup.collect({}, "h", "h", answers)
+
+    def test_timer_units_run_as_user_and_reject_bad_user(self):
+        units = updater_setup.render_units(Path("/srv/homelab/containers/updater"), "maciek")
+        self.assertIn("User=maciek", units["homelab-updater-apply.service"])
+        self.assertIn("updater.py check", units["homelab-updater-check.service"])
+        self.assertIn("OnUnitActiveSec=1min", units["homelab-updater-apply.timer"])
+        with self.assertRaises(updater_setup.UpdaterError):
+            updater_setup.render_units(Path("/srv/x"), "bad user")
 
 
 if __name__ == "__main__":

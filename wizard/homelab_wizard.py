@@ -17,6 +17,7 @@ import tempfile
 from pathlib import Path
 
 import ddns_client
+import updater_setup
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -33,6 +34,7 @@ SERVICES = {
     "django": ("Django (alternatywa dla WordPressa)", True, ()),
     "jellyfin": ("Jellyfin", True, ()),
     "euro-office": ("Euro-Office dla Nextcloud", True, ("nextcloud",)),
+    "updater": ("Updater (aktualizacje kontenerów z akceptacją e-mail)", True, ()),
     "minecraft": ("Minecraft Java", False, ()),
     "samba": ("Samba SMB", False, ()),
 }
@@ -44,6 +46,7 @@ WEB_ENV = {
     "django": ("DJANGO_HOST", "DJANGO_TLS_HOST"),
     "jellyfin": ("JELLYFIN_HOST", "JELLYFIN_TLS_HOST"),
     "euro-office": ("EURO_OFFICE_HOST", "EURO_OFFICE_TLS_HOST"),
+    "updater": ("UPDATER_HOST", "UPDATER_TLS_HOST"),
 }
 START_ORDER = (
     "nginx-proxy",
@@ -56,6 +59,7 @@ START_ORDER = (
     "jellyfin",
     "euro-office",
     "zigbee2mqtt",
+    "updater",
     "minecraft",
     "samba",
 )
@@ -535,6 +539,20 @@ def compose_command(docker: list[str], service_dir: Path, action: str) -> None:
     ])
 
 
+def finish_updater() -> None:
+    directory = CONTAINERS / "updater"
+    script = [sys.executable, str(directory / "updater.py")]
+    if not (directory / "state" / "password.json").is_file():
+        print("\nUstaw hasło wymagane na stronie zatwierdzania aktualizacji:")
+        run([*script, "set-password"])
+    if read_env(directory / ".env").get("SMTP_HOST") and confirm("Wysłać testowy e-mail Updatera?", True):
+        run([*script, "test-mail"], check=False)
+    if confirm("Zainstalować harmonogram systemd (apply co minutę, check raz dziennie)?", True):
+        updater_setup.install_timers(directory, updater_setup.host_user(), privileged)
+        print("Harmonogram: systemctl list-timers 'homelab-updater-*'")
+    print("Updater ma dostęp do Docker API jako to konto — rób niezależne kopie zapasowe.")
+
+
 def load_state() -> set[str]:
     if not STATE_FILE.exists():
         return set()
@@ -639,6 +657,11 @@ def main(argv: list[str] | None = None) -> int:
                 old_values.get("jellyfin", {}).get("MEDIA_ROOT", default_media),
             )
             all_env.setdefault("jellyfin", {})["MEDIA_ROOT"] = media
+        if "updater" in selected:
+            net = network_env["updater"]
+            all_env.setdefault("updater", {}).update(updater_setup.collect(
+                old_values.get("updater", {}), net["UPDATER_HOST"], net["UPDATER_TLS_HOST"], ask,
+            ))
         if "zigbee2mqtt" in selected:
             configured_adapter = old_values.get("zigbee2mqtt", {}).get("ZIGBEE_ADAPTER", "")
             if configured_adapter.startswith("/dev/serial/by-id/replace-with-"):
@@ -669,6 +692,10 @@ def main(argv: list[str] | None = None) -> int:
             updates = all_env.get(name, {})
             write_env(directory / ".env", updates)
 
+        if "updater" in selected:
+            state_dir = CONTAINERS / "updater" / "state"
+            state_dir.mkdir(mode=0o700, exist_ok=True)
+
         if "mqtt" in selected:
             create_mqtt_password(docker, CONTAINERS / "mqtt")
 
@@ -689,11 +716,13 @@ def main(argv: list[str] | None = None) -> int:
         for name in START_ORDER:
             if name in selected:
                 compose_command(docker, CONTAINERS / name, "up")
+        if "updater" in selected:
+            finish_updater()
         save_state(selected)
         print("\nGotowe. Sprawdź `docker compose ps` w katalogach wybranych usług.")
         print("Dostęp publiczny wymaga poprawnych rekordów DNS, przekierowań portów i sprawdzenia zewnętrznego.")
         return 0
-    except (WizardError, ddns_client.DdnsError, subprocess.CalledProcessError, EOFError, KeyboardInterrupt) as exc:
+    except (WizardError, ddns_client.DdnsError, updater_setup.UpdaterError, subprocess.CalledProcessError, EOFError, KeyboardInterrupt) as exc:
         if isinstance(exc, KeyboardInterrupt):
             print("\nPrzerwano przez użytkownika.", file=sys.stderr)
             return 130

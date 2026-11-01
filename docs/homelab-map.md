@@ -147,7 +147,7 @@ administracyjnej publicznie.
 
 | Rola | Usługa / metoda | Źródła i uwagi |
 |---|---|---|
-| Aktualizacje kontenerów | Updater (osobny projekt) | [Homelab Container Updater](https://github.com/mmalmon/homelab-container-updater), [opis i wzór](../containers/updater/README.md). Wysyła e-mail z jednorazowym linkiem i wymaga hasła; nie jest instalowany przez kreator. Automatyczne podmienianie obrazów baz, Nextcloud, Immich czy WordPress bez kopii/testu może spowodować awarię lub utratę danych. |
+| Aktualizacje kontenerów | Updater (osobny projekt) | [Homelab Container Updater](https://github.com/mmalmon/homelab-container-updater), [opis i wzór](../containers/updater/README.md). Wysyła e-mail z jednorazowym linkiem i wymaga hasła; kreator instaluje go na życzenie (SMTP, hasło, harmonogram). Automatyczne podmienianie obrazów baz, Nextcloud, Immich czy WordPress bez kopii/testu może spowodować awarię lub utratę danych. |
 | Aktualizacje systemu | APT / aktualizacje bezpieczeństwa Ubuntu | Weryfikuj po aktualizacji stan hosta, Docker, usługi i odtwarzanie kopii. |
 | Kopie i odtwarzanie | Osobna procedura dla każdej usługi | [Kopie Nextcloud i Immich](backup-and-restore.md); sprawdzaj odtworzenie, nie tylko powstanie plików. |
 

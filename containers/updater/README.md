@@ -2,8 +2,10 @@
 
 Wzór działającego Updatera (ten sam kod co w osobnym repozytorium
 [homelab-container-updater](https://github.com/mmalmon/homelab-container-updater)).
-Nie jest instalowany przez kreator, bo skrypt na hoście steruje Dockerem
-(uprawnienia równoważne root) — uruchamiasz go świadomie, ręcznie.
+Najprościej zainstalować go kreatorem (`bash ./homelab`, usługa `updater`):
+zapyta o SMTP, ustawi hasło i harmonogram systemd. Skrypt na hoście steruje
+Dockerem (uprawnienia równoważne root), więc wybieraj go świadomie. Instalacja
+ręczna jest opisana niżej.
 
 ## Jak działa
 

@@ -82,7 +82,8 @@ LAN/VPN, a w trybie publicznym pozostawia bez hosta i certyfikatu.
   Internetu.
 - Dostęp do Docker socketu w `nginx-proxy` jest bardzo uprzywilejowany.
   Używaj zaufanych obrazów. Aktualizacje kontenerów opisuje
-  [Updater](../containers/updater/README.md) — nie jest instalowany przez kreator.
+  [Updater](../containers/updater/README.md) — kreator instaluje go jako usługę `updater`: pyta o SMTP, ustawia hasło
+  zatwierdzania i harmonogram systemd (zob. sekcję „Updater” poniżej).
 - Pliki `.env` zawierają sekrety i są ustawiane jako `600`; nigdy nie
   publikuj ich, nie dodawaj do zgłoszeń i nie wklejaj do logów.
 - Kreator nie konfiguruje konta u dostawcy DDNS, publicznych DNS dla
@@ -97,3 +98,15 @@ LAN/VPN, a w trybie publicznym pozostawia bez hosta i certyfikatu.
 Instrukcje obsługi poszczególnych Compose i zależności między usługami są w
 [katalogu kontenerów](../containers/README.md). Sprawdź oficjalne dokumentacje
 [Dockera](https://docs.docker.com/engine/install/) i [Cockpit](https://cockpit-project.org/running.html).
+
+## Updater
+
+Wybór `updater` konfiguruje `containers/updater/.env` i uruchamia
+`updater-web` za `nginx-proxy`. Kreator pyta o hostname, serwer SMTP,
+szyfrowanie (`starttls`/`ssl`), port, adres odbiorcy i nadawcy oraz login i
+hasło SMTP (bez echa; puste pole SMTP = wiadomości tylko w `state/outbox/`).
+Następnie wywołuje `updater.py set-password` (hasło zatwierdzania, min. 12
+znaków), opcjonalnie `test-mail` i instaluje timery systemd:
+`homelab-updater-apply.timer` (co minutę) oraz `homelab-updater-check.timer`
+(codziennie ok. 04:30), uruchamiane jako Twoje konto. Sekrety trafiają tylko
+do lokalnego `.env` (`600`) i `state/`, które są ignorowane przez Git.

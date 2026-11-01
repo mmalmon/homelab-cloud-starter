@@ -19,6 +19,8 @@ services:
       STATE_DIR: /state
       VIRTUAL_HOST: "${UPDATER_HOST:?Set UPDATER_HOST in .env}"
       VIRTUAL_PORT: "8080"
+      LETSENCRYPT_HOST: "${UPDATER_TLS_HOST:-}"
+      LETSENCRYPT_EMAIL: "${LETSENCRYPT_EMAIL:-}"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8080/updates/health',timeout=3)"]
       interval: 30s
