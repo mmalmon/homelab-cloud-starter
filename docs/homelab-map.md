@@ -53,6 +53,10 @@ potem router przekazuje wymagane porty do hosta i `nginx-proxy` routuje
 z adresem IP — **nie** konfiguruje przekierowania portów, firewalla, TLS ani
 samego reverse proxy.
 
+Część dostawców DDNS wymaga też konfiguracji po stronie routera (np.
+wbudowany klient DDNS z loginem i nazwą hosta) — sprawdź instrukcję dostawcy
+i modelu routera; kreator tego nie ustawia.
+
 DDNS nie omija **CGNAT** ani blokady ruchu przychodzącego przez dostawcę
 Internetu. Jeśli router nie ma własnego, osiągalnego publicznego adresu
 (adres WAN może być prywatny lub z zakresu współdzielonego), zwykłe
@@ -122,6 +126,7 @@ i nie powinien być otwarty do Internetu.
 | Usługa | Rola | Oficjalne źródła |
 |---|---|---|
 | WordPress | CMS dla strony lub bloga; zwykle potrzebuje własnej bazy danych i trwałego katalogu `wp-content`. | [WordPress](https://wordpress.org/), [instrukcja instalacji](https://developer.wordpress.org/advanced-administration/before-install/howto-install/), [oficjalny obraz Docker](https://hub.docker.com/_/wordpress), [przykładowy Compose](../stacks/wordpress/compose.yaml) |
+| Django (zamiennik WordPressa) | Framework do budowy własnej strony lub aplikacji WWW zamiast gotowego CMS; wymaga własnego projektu, Dockerfile i zwykle bazy PostgreSQL. Starter nie dostarcza kontenera Django. | [Django](https://www.djangoproject.com/), [dokumentacja wdrożeń](https://docs.djangoproject.com/en/stable/howto/deployment/), [oficjalny obraz Python](https://hub.docker.com/_/python) |
 
 WordPress powinien mieć osobną bazę i sekrety, regularne aktualizacje rdzenia,
 wtyczek i motywów oraz kopię bazy i plików. Ruch webowy kieruj przez wspólny
@@ -170,7 +175,7 @@ zależności i cyklu życia, na przykład:
 2. Nextcloud z własną bazą i Redis;
 3. Immich z własną bazą i Valkey;
 4. Home Assistant, broker MQTT i Zigbee2MQTT;
-5. WordPress z osobną bazą;
+5. WordPress (albo własna aplikacja Django) z osobną bazą;
 6. Jellyfin i serwer Minecraft;
 7. współdzielone pliki i narzędzia utrzymaniowe.
 
