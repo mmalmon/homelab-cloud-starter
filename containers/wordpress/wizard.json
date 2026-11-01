@@ -1,0 +1,5 @@
+{
+  "title": "WordPress + MySQL",
+  "order": 50,
+  "web": {"host_env": "WORDPRESS_HOST", "tls_env": "WORDPRESS_TLS_HOST"}
+}

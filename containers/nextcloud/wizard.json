@@ -1,0 +1,5 @@
+{
+  "title": "Nextcloud + PostgreSQL + Redis",
+  "order": 30,
+  "web": {"host_env": "NEXTCLOUD_HOST", "tls_env": "NEXTCLOUD_TLS_HOST"}
+}

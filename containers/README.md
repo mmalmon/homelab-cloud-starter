@@ -17,3 +17,31 @@ Django i WordPress są alternatywami: Django buduje własny obraz z `app/`.
 Home Assistant (tryb host), MQTT, SMB i Minecraft nie są routingowane przez
 HTTP reverse proxy. Panel Zigbee2MQTT jest administracyjny — nie wystawiaj go
 publicznie bez skonfigurowanego uwierzytelniania.
+
+## Dodawanie własnego kontenera
+
+Kreator wykrywa usługi automatycznie: wystarczy katalog
+`containers/<nazwa>/` (małe litery, cyfry i `-`) z plikami `compose.yaml`,
+`.env.example` i `wizard.json`. Katalog bez `wizard.json` lub z błędnym
+manifestem jest pomijany z ostrzeżeniem, a testy w CI to wykryją.
+
+```json
+{
+  "title": "Gitea",
+  "order": 65,
+  "requires": ["nextcloud"],
+  "web": {"host_env": "GITEA_HOST", "tls_env": "GITEA_TLS_HOST", "public": true}
+}
+```
+
+- `title` — nazwa na liście kreatora (wymagane).
+- `order` — kolejność na liście i przy uruchamianiu (domyślnie 1000).
+- `requires` — usługi, które kreator doda razem z tą (opcjonalnie).
+- `web` — dla usług HTTP: nazwy zmiennych hostname i hostname TLS z
+  `compose.yaml` (`VIRTUAL_HOST`/`LETSENCRYPT_HOST`); kreator zapyta o domenę,
+  skonfiguruje `nginx-proxy` i Let's Encrypt. `public: false` oznacza panel
+  tylko LAN, bez certyfikatu publicznego.
+- `hidden` — usługa wewnętrzna, niewidoczna na liście (tak jest `nginx-proxy`).
+
+Kreator sam wypełni tylko wartości sieciowe. Dodatkowe pytania (SMTP, ścieżki
+mediów) wymagają kodu w `wizard/`; pozostałe zmienne uzupełnij w `.env`.

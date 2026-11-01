@@ -24,45 +24,76 @@ ROOT = Path(__file__).resolve().parents[1]
 CONTAINERS = ROOT / "containers"
 STATE_FILE = ROOT / ".homelab-state.json"
 
-SERVICES = {
-    "nextcloud": ("Nextcloud + PostgreSQL + Redis", True, ()),
-    "immich": ("Immich (zdjęcia)", True, ()),
-    "home-assistant": ("Home Assistant", False, ()),
-    "mqtt": ("Mosquitto MQTT", False, ()),
-    "zigbee2mqtt": ("Zigbee2MQTT", True, ("mqtt",)),
-    "wordpress": ("WordPress + MySQL", True, ()),
-    "django": ("Django (alternatywa dla WordPressa)", True, ()),
-    "jellyfin": ("Jellyfin", True, ()),
-    "euro-office": ("Euro-Office dla Nextcloud", True, ("nextcloud",)),
-    "updater": ("Updater (aktualizacje kontenerów z akceptacją e-mail)", True, ()),
-    "minecraft": ("Minecraft Java", False, ()),
-    "samba": ("Samba SMB", False, ()),
-}
-WEB_ENV = {
-    "nextcloud": ("NEXTCLOUD_HOST", "NEXTCLOUD_TLS_HOST"),
-    "immich": ("IMMICH_HOST", "IMMICH_TLS_HOST"),
-    "zigbee2mqtt": ("ZIGBEE2MQTT_HOST", "ZIGBEE2MQTT_TLS_HOST"),
-    "wordpress": ("WORDPRESS_HOST", "WORDPRESS_TLS_HOST"),
-    "django": ("DJANGO_HOST", "DJANGO_TLS_HOST"),
-    "jellyfin": ("JELLYFIN_HOST", "JELLYFIN_TLS_HOST"),
-    "euro-office": ("EURO_OFFICE_HOST", "EURO_OFFICE_TLS_HOST"),
-    "updater": ("UPDATER_HOST", "UPDATER_TLS_HOST"),
-}
-START_ORDER = (
-    "nginx-proxy",
-    "mqtt",
-    "home-assistant",
-    "nextcloud",
-    "immich",
-    "wordpress",
-    "django",
-    "jellyfin",
-    "euro-office",
-    "zigbee2mqtt",
-    "updater",
-    "minecraft",
-    "samba",
-)
+MANIFEST = "wizard.json"
+NAME_RE = re.compile(r"[a-z0-9][a-z0-9-]*")
+ENV_KEY_RE = re.compile(r"[A-Z][A-Z0-9_]*")
+
+
+def parse_manifest(name: str, data: object) -> dict:
+    """Validate a containers/<name>/wizard.json manifest; raise ValueError when invalid."""
+    if not isinstance(data, dict):
+        raise ValueError("manifest musi być obiektem JSON")
+    title = data.get("title")
+    order = data.get("order", 1000)
+    requires = data.get("requires", [])
+    web = data.get("web")
+    if not isinstance(title, str) or not title.strip():
+        raise ValueError("brak pola title")
+    if not isinstance(order, int) or isinstance(order, bool):
+        raise ValueError("order musi być liczbą całkowitą")
+    if not isinstance(requires, list) or not all(isinstance(r, str) and NAME_RE.fullmatch(r) for r in requires):
+        raise ValueError("requires musi być listą nazw usług")
+    if web is not None:
+        if not isinstance(web, dict):
+            raise ValueError("web musi być obiektem")
+        for key in ("host_env", "tls_env"):
+            if not isinstance(web.get(key), str) or not ENV_KEY_RE.fullmatch(web[key]):
+                raise ValueError(f"web.{key} musi być nazwą zmiennej środowiskowej")
+        if not isinstance(web.get("public", True), bool):
+            raise ValueError("web.public musi być true/false")
+    return {
+        "title": title.strip(),
+        "order": order,
+        "requires": tuple(requires),
+        "web": (web["host_env"], web["tls_env"]) if web else None,
+        "public": bool(web.get("public", True)) if web else False,
+        "hidden": bool(data.get("hidden", False)),
+    }
+
+
+def discover_services(directory: Path) -> dict[str, dict]:
+    """Find services as containers/<name>/ with compose.yaml and wizard.json."""
+    found: dict[str, dict] = {}
+    if not directory.is_dir():
+        return found
+    for path in sorted(directory.iterdir()):
+        if not path.is_dir() or not (path / "compose.yaml").is_file():
+            continue
+        if not NAME_RE.fullmatch(path.name):
+            print(f"Pominięto containers/{path.name}: niedozwolona nazwa katalogu.", file=sys.stderr)
+            continue
+        manifest = path / MANIFEST
+        if not manifest.is_file():
+            print(f"Pominięto containers/{path.name}: brak {MANIFEST} (zob. containers/README.md).", file=sys.stderr)
+            continue
+        try:
+            found[path.name] = parse_manifest(path.name, json.loads(manifest.read_text(encoding="utf-8")))
+        except (OSError, ValueError) as exc:
+            print(f"Pominięto containers/{path.name}: nieprawidłowy {MANIFEST}: {exc}", file=sys.stderr)
+    for name, item in list(found.items()):
+        missing = [dep for dep in item["requires"] if dep not in found]
+        if missing:
+            print(f"Pominięto containers/{name}: wymaga nieznanych usług: {', '.join(missing)}.", file=sys.stderr)
+            del found[name]
+    return found
+
+
+_DISCOVERED = discover_services(CONTAINERS)
+_VISIBLE = sorted((n for n, d in _DISCOVERED.items() if not d["hidden"]), key=lambda n: (_DISCOVERED[n]["order"], n))
+SERVICES = {n: (_DISCOVERED[n]["title"], _DISCOVERED[n]["web"] is not None, _DISCOVERED[n]["requires"]) for n in _VISIBLE}
+WEB_ENV = {n: _DISCOVERED[n]["web"] for n in _VISIBLE if _DISCOVERED[n]["web"]}
+NON_PUBLIC = frozenset(n for n in WEB_ENV if not _DISCOVERED[n]["public"])
+START_ORDER = ("nginx-proxy", *_VISIBLE)
 
 
 class WizardError(Exception):
@@ -293,34 +324,21 @@ def ask_domain(prompt: str, default: str) -> str:
         print("Podaj poprawną nazwę DNS, np. cloud.example.org.")
 
 
-def collect_network(selected: set[str], old_values: dict[str, dict[str, str]]) -> tuple[dict[str, dict[str, str]], dict[str, str], str]:
-    web_services = sorted(selected.intersection(WEB_ENV))
-    public_services = [name for name in web_services if name != "zigbee2mqtt"]
-    network_env: dict[str, dict[str, str]] = {}
+def choose_network(old_proxy: dict[str, str]) -> tuple[str, str, dict[str, str]]:
+    """Ask how the server is reached; returns (mode, base_domain, ddns_env)."""
     ddns_env: dict[str, str] = {}
-    mode = "local"
-    lan_ip = detect_lan_address()
-    old_proxy = read_env(CONTAINERS / "nginx-proxy" / ".env")
-    if public_services:
-        print("\nDostęp sieciowy dla usług WWW:")
-        print("  1. LAN/VPN (lokalna domena, bez certyfikatu publicznego)")
-        print("  2. Publiczne IP stałe (ręczne rekordy DNS)")
-        print("  3. Dynamiczne IP z DDNS (opcjonalny klient na hoście: ddclient/inadyn)")
-        mode_default = {
-            "local": "1",
-            "static": "2",
-            "ddns": "3",
-        }.get(
-            old_proxy.get("NETWORK_MODE", ""),
-            "1",
-        )
-        choice = ask("Wybierz 1-3", mode_default)
-        mode = {"1": "local", "2": "static", "3": "ddns"}.get(choice, "")
-        if not mode:
-            raise WizardError("Nieprawidłowy wybór dostępu sieciowego.")
+    print("\nDostęp sieciowy dla usług WWW:")
+    print("  1. LAN/VPN (lokalna domena, bez certyfikatu publicznego)")
+    print("  2. Publiczne IP stałe (ręczne rekordy DNS)")
+    print("  3. Dynamiczne IP z DDNS (opcjonalny klient na hoście: ddclient/inadyn)")
+    mode_default = {"local": "1", "static": "2", "ddns": "3"}.get(old_proxy.get("NETWORK_MODE", ""), "1")
+    choice = ask("Wybierz 1-3", mode_default)
+    mode = {"1": "local", "2": "static", "3": "ddns"}.get(choice, "")
+    if not mode:
+        raise WizardError("Nieprawidłowy wybór dostępu sieciowego.")
 
     base_domain = ""
-    if mode == "local" and web_services:
+    if mode == "local":
         base_domain = ask_domain(
             "Lokalna strefa DNS (skonfiguruj ją w swoim DNS/routerze)",
             old_proxy.get("BASE_DOMAIN", "home.arpa"),
@@ -343,6 +361,21 @@ def collect_network(selected: set[str], old_values: dict[str, dict[str, str]]) -
             old_proxy.get("BASE_DOMAIN", "example.org"),
         )
         print("Klienta DDNS możesz zainstalować na końcu albo pominąć, jeśli DDNS działa w routerze (zob. docs/ddns.md).")
+    return mode, base_domain, ddns_env
+
+
+def collect_network(
+    selected: set[str],
+    old_values: dict[str, dict[str, str]],
+    network: tuple[str, str, dict[str, str]] | None = None,
+) -> tuple[dict[str, dict[str, str]], dict[str, str], str]:
+    """Collect hostnames and proxy settings; `network` comes from choose_network()."""
+    web_services = sorted(selected.intersection(WEB_ENV))
+    public_services = [name for name in web_services if name not in NON_PUBLIC]
+    network_env: dict[str, dict[str, str]] = {}
+    lan_ip = detect_lan_address()
+    old_proxy = read_env(CONTAINERS / "nginx-proxy" / ".env")
+    mode, base_domain, ddns_env = network or choose_network(old_proxy)
 
     bind_ip = old_proxy.get("PROXY_BIND_ADDRESS", lan_ip)
     if web_services or "samba" in selected:
@@ -357,7 +390,7 @@ def collect_network(selected: set[str], old_values: dict[str, dict[str, str]]) -
         host_key, tls_key = WEB_ENV[service]
         old = old_values.get(service, {})
         current = old.get(host_key, "")
-        if service == "zigbee2mqtt" and mode != "local":
+        if service in NON_PUBLIC and mode != "local":
             network_env[service] = {host_key: "", tls_key: "", "LETSENCRYPT_EMAIL": ""}
             continue
         if mode == "local":
@@ -602,6 +635,7 @@ def main(argv: list[str] | None = None) -> int:
             raise WizardError("Nie znaleziono polecenia docker po instalacji.")
         docker = docker_prefix()
         configured = load_state()
+        network = choose_network(read_env(CONTAINERS / "nginx-proxy" / ".env"))
         selected = select_services(configured)
         if "minecraft" in selected:
             minecraft_env = read_env(CONTAINERS / "minecraft" / ".env")
@@ -614,17 +648,19 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         old_values = {name: read_env(CONTAINERS / name / ".env") for name in selected}
-        network_env, ddns_env, mode = collect_network(selected, old_values)
+        network_env, ddns_env, mode = collect_network(selected, old_values, network)
         if any(SERVICES.get(name, ("", False, ()))[1] for name in selected):
             selected.add("nginx-proxy")
         ddns_plan = None
+        public_hosts: list[str] = []
         if mode == "ddns":
             public_hosts = sorted({
                 values[WEB_ENV[name][1]]
                 for name, values in network_env.items()
                 if name in WEB_ENV and values.get(WEB_ENV[name][1])
             })
-            ddns_plan = ddns_client.collect(public_hosts, ask)
+            if public_hosts:
+                ddns_plan = ddns_client.collect(public_hosts, ask)
 
         lan_cidr = ask("Zaufana podsieć LAN dla Cockpit/HA/SMB (CIDR; Enter pomija ograniczone reguły)", "")
         if lan_cidr:

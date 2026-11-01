@@ -13,6 +13,22 @@ potrzebny. Przy wyborze Zigbee2MQTT podaj ścieżkę istniejącego koordynatora
 z `/dev/serial/by-id/`. Wszystkie aktualne usługi oraz ich źródła są opisane w
 [mapie homelaba](homelab-map.md).
 
+## Kolejność pytań
+
+1. Instalacja Docker Engine, Compose v2 i Cockpit, jeśli ich brakuje.
+2. Dostęp sieciowy: LAN/VPN, stały publiczny IP albo DDNS (domyślnie to, co
+   zapisano poprzednio w `containers/nginx-proxy/.env`).
+3. Lista usług wykrytych w `containers/` — kreator oznacza już
+   skonfigurowane, a Enter wybiera tylko nowe.
+4. Adres LAN, hostnames wybranych usług, e-mail Let's Encrypt, ustawienia
+   usług (np. SMTP Updatera), opcjonalny klient DDNS, firewall i uruchomienie.
+
+Lista usług powstaje z katalogów `containers/<nazwa>/` zawierających
+`compose.yaml` i `wizard.json`, więc nowy kontener pojawia się w kreatorze bez
+zmian w kodzie (zob. [containers/README.md](../containers/README.md)).
+Przy dodawaniu usługi później kreator ponownie zapisuje `nginx-proxy` z
+domenami nowej usługi.
+
 ## Instalacja hosta
 
 Kreator wspiera automatyczną instalację na Ubuntu, Debianie i Fedorze:

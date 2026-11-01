@@ -22,10 +22,12 @@ bash ./homelab
 
 Kreator może zainstalować Docker Engine, Compose v2, Cockpit i skonfigurować
 podstawowy firewall. Pyta o wybrane usługi, domeny oraz stały publiczny adres
-IP albo DDNS (z opcjonalną instalacją klienta na hoście), tworzy lokalne pliki `.env` z uprawnieniami
+IP albo DDNS (z opcjonalnym klientem na hoście), tworzy lokalne pliki `.env` z uprawnieniami
 `600` i uruchamia tylko wybrane stosy. Późniejsze uruchomienie `bash ./homelab`
 pozwala dodać kolejne usługi bez nadpisywania istniejących sekretów — z
-właściwą konfiguracją `nginx-proxy`.
+właściwą konfiguracją `nginx-proxy`. Kolejność: Docker i Cockpit, tryb sieci
+(IP/DDNS), lista usług. Usługi wykrywane są z `containers/*/wizard.json`, więc
+własny kontener dodasz bez zmian w kodzie ([jak](containers/README.md)).
 
 ## Struktura repozytorium
 

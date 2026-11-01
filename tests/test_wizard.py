@@ -206,5 +206,76 @@ class UpdaterSetupTests(unittest.TestCase):
             updater_setup.render_units(Path("/srv/x"), "bad user")
 
 
+class DiscoveryTests(unittest.TestCase):
+    def make_service(self, root, name, manifest=None, compose=True):
+        directory = Path(root) / name
+        directory.mkdir()
+        if compose:
+            (directory / "compose.yaml").write_text("services: {}\n")
+        if manifest is not None:
+            (directory / "wizard.json").write_text(manifest)
+
+    def test_every_container_with_compose_has_a_valid_manifest(self):
+        for compose in (wizard.CONTAINERS).glob("*/compose.yaml"):
+            self.assertTrue(
+                compose.parent.name in wizard._DISCOVERED,
+                f"{compose.parent.name}: brak lub błędny wizard.json",
+            )
+
+    def test_new_container_folder_is_discovered_with_web_and_order(self):
+        with tempfile.TemporaryDirectory() as root:
+            self.make_service(
+                root, "gitea",
+                '{"title": "Gitea", "order": 5, "web": {"host_env": "GITEA_HOST", "tls_env": "GITEA_TLS_HOST"}}',
+            )
+            found = wizard.discover_services(Path(root))
+        self.assertEqual(found["gitea"]["web"], ("GITEA_HOST", "GITEA_TLS_HOST"))
+        self.assertTrue(found["gitea"]["public"])
+        self.assertEqual(found["gitea"]["order"], 5)
+
+    def test_invalid_missing_and_unresolved_manifests_are_skipped(self):
+        with tempfile.TemporaryDirectory() as root:
+            self.make_service(root, "nomanifest")
+            self.make_service(root, "badjson", "{not json")
+            self.make_service(root, "badenv", '{"title": "X", "web": {"host_env": "bad-key", "tls_env": "X_TLS"}}')
+            self.make_service(root, "orphan", '{"title": "O", "requires": ["missing"]}')
+            self.make_service(root, "nocompose", '{"title": "N"}', compose=False)
+            self.make_service(root, "ok", '{"title": "OK"}')
+            with patch("sys.stderr"):
+                found = wizard.discover_services(Path(root))
+        self.assertEqual(list(found), ["ok"])
+
+    def test_nginx_proxy_is_hidden_but_started_first(self):
+        self.assertNotIn("nginx-proxy", wizard.SERVICES)
+        self.assertEqual(wizard.START_ORDER[0], "nginx-proxy")
+        self.assertIn("zigbee2mqtt", wizard.NON_PUBLIC)
+        self.assertLess(wizard.START_ORDER.index("mqtt"), wizard.START_ORDER.index("zigbee2mqtt"))
+
+
+class FlowOrderTests(unittest.TestCase):
+    def test_network_is_chosen_before_the_service_list(self):
+        calls = []
+
+        def select(_configured):
+            calls.append("select_services")
+            raise wizard.WizardError("stop")
+
+        def choose(_old):
+            calls.append("choose_network")
+            return "local", "home.arpa", {}
+
+        with patch.object(wizard.sys.stdin, "isatty", return_value=True), patch.object(
+            wizard, "read_os_release", return_value={"ID": "ubuntu"}
+        ), patch.object(wizard.shutil, "which", return_value="/usr/bin/docker"), patch.object(
+            wizard.subprocess, "run", return_value=SimpleNamespace(returncode=0)
+        ), patch.object(wizard, "confirm", return_value=False), patch.object(
+            wizard, "docker_prefix", return_value=["docker"]
+        ), patch.object(wizard, "load_state", return_value=set()), patch.object(
+            wizard, "choose_network", side_effect=choose
+        ), patch.object(wizard, "select_services", side_effect=select), patch("sys.stderr"):
+            self.assertEqual(wizard.main([]), 1)
+        self.assertEqual(calls, ["choose_network", "select_services"])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,5 @@
+{
+  "title": "Django (alternatywa dla WordPressa)",
+  "order": 60,
+  "web": {"host_env": "DJANGO_HOST", "tls_env": "DJANGO_TLS_HOST"}
+}

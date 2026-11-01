@@ -1,0 +1,6 @@
+{
+  "title": "Euro-Office dla Nextcloud",
+  "order": 80,
+  "requires": ["nextcloud"],
+  "web": {"host_env": "EURO_OFFICE_HOST", "tls_env": "EURO_OFFICE_TLS_HOST"}
+}

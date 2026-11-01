@@ -1,0 +1,6 @@
+{
+  "title": "Zigbee2MQTT",
+  "order": 90,
+  "requires": ["mqtt"],
+  "web": {"host_env": "ZIGBEE2MQTT_HOST", "tls_env": "ZIGBEE2MQTT_TLS_HOST", "public": false}
+}

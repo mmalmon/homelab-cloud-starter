@@ -1,0 +1,5 @@
+{
+  "title": "Immich (zdjęcia)",
+  "order": 40,
+  "web": {"host_env": "IMMICH_HOST", "tls_env": "IMMICH_TLS_HOST"}
+}

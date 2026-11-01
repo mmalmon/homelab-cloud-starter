@@ -1,0 +1,5 @@
+{
+  "title": "Jellyfin",
+  "order": 70,
+  "web": {"host_env": "JELLYFIN_HOST", "tls_env": "JELLYFIN_TLS_HOST"}
+}

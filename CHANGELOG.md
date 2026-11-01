@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- Kreator wykrywa usługi z `containers/*/wizard.json`; nowy kontener nie wymaga zmian w kodzie.
+- Nowa kolejność pytań: Docker i Cockpit, tryb sieci (IP/DDNS), lista usług.
 - Kreator może zainstalować klienta DDNS na hoście (ddclient, inadyn).
 - Dokument DDNS z wymaganiami routera, NAT, firewalla i CGNAT.
 - Szablon Django jako alternatywa dla WordPressa.

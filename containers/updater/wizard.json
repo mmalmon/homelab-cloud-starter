@@ -1,0 +1,5 @@
+{
+  "title": "Updater (aktualizacje kontenerów z akceptacją e-mail)",
+  "order": 100,
+  "web": {"host_env": "UPDATER_HOST", "tls_env": "UPDATER_TLS_HOST"}
+}
