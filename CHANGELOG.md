@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Dokumentacja: subdomeny usług i działanie nginx-proxy.
 - Kreator obsługuje rodziny Debian, Fedora, RHEL (Rocky/Alma), Arch i openSUSE (wykrywanie przez `ID_LIKE`).
 - Kreator wykrywa usługi z `containers/*/wizard.json`; nowy kontener nie wymaga zmian w kodzie.
 - Nowa kolejność pytań: Docker i Cockpit, tryb sieci (IP/DDNS), lista usług.

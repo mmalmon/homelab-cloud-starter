@@ -95,6 +95,22 @@ nie są publikowane pod subdomeną w reverse proxy. Panel Zigbee2MQTT jest
 panelem administracyjnym: kreator udostępnia go przez proxy tylko w trybie
 LAN/VPN, a w trybie publicznym pozostawia bez hosta i certyfikatu.
 
+## Subdomeny i nginx-proxy
+
+Kreator nie generuje plików `conf` nginxa. Za routing odpowiada `nginx-proxy`,
+który czyta gniazdo Dockera i tworzy vhosty z `VIRTUAL_HOST` kontenerów.
+
+- Dla usługi z sekcją `web` w `wizard.json` kreator pyta o hostname; domyślnie
+  `<usługa>.<domena bazowa>` (myślniki są usuwane, np. `homeassistant.example.org`).
+- Hostname trafia do `.env` usługi (np. `JELLYFIN_HOST`) i jest mapowany na
+  `VIRTUAL_HOST`; przy podanym e-mailu `acme-companion` wystawia certyfikat
+  Let's Encrypt (`LETSENCRYPT_HOST`).
+- Usługi z `"public": false` (Zigbee2MQTT) nie są wystawiane.
+- Kreator nie tworzy rekordów DNS: ustaw wildcard `*.domena` albo osobne wpisy
+  (w trybie DDNS: CNAME na adres DDNS).
+- Własne ustawienia vhosta (limity uploadu, nagłówki) dodaj ręcznie w
+  `vhost.d` albo zmiennymi `nginx-proxy`.
+
 ## Bezpieczeństwo i ograniczenia
 
 - Kreator zmienia ustawienia systemowe/firewalla wyłącznie po potwierdzeniu.
