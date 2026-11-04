@@ -90,7 +90,7 @@ blokad ISP. Sprawdź dostęp z zewnętrznej sieci.
 Usługi webowe dostają własny wpis `VIRTUAL_HOST`, a publiczne również
 `LETSENCRYPT_HOST`; `nginx-proxy` generuje routing dynamicznie z metadanych
 Docker, więc nie trzeba edytować statycznego `nginx.conf`. Home Assistant,
-MQTT, Samba i Minecraft korzystają z odrębnych protokołów/trybów sieciowych,
+MQTT, Samba, Minecraft i F.E.A.R. Combat korzystają z odrębnych protokołów/trybów sieciowych,
 nie są publikowane pod subdomeną w reverse proxy. Panel Zigbee2MQTT jest
 panelem administracyjnym: kreator udostępnia go przez proxy tylko w trybie
 LAN/VPN, a w trybie publicznym pozostawia bez hosta i certyfikatu.
@@ -155,3 +155,15 @@ znaków), opcjonalnie `test-mail` i instaluje timery systemd:
 `homelab-updater-apply.timer` (co minutę) oraz `homelab-updater-check.timer`
 (codziennie ok. 04:30), uruchamiane jako Twoje konto. Sekrety trafiają tylko
 do lokalnego `.env` (`600`) i `state/`, które są ignorowane przez Git.
+
+## F.E.A.R. Combat SEC2
+
+Przed wyborem `fear-combat` przygotuj pełne pliki serwera Linux i aktualizację
+SEC2 według [instrukcji stosu](../containers/fear-combat/README.md).
+Kreator sprawdza `fearserver.bin` i `libGameServer.so`, pyta o konkretny adres
+IPv4 interfejsu oraz port UDP hosta. Działa jako nieuprzywilejowane UID/GID,
+zachowuje istniejącą konfigurację gry i nie pobiera binariów automatycznie.
+Przy brakujących plikach zatrzymuje się przed zmianami firewalla i startem stosów.
+Dla wskazanej podsieci LAN może dodać regułę UDP na wybrany port; publiczny
+NAT i zaporę routera ustawiasz samodzielnie. Port gry wewnątrz kontenera
+pozostaje `27888`, a domyślny szablon ma `LANOnly=1`.

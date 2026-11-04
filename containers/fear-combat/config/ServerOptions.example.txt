@@ -1,0 +1,23 @@
+[ServerSettings]
+GameType=DeathMatch
+ServerMessage=F.E.A.R. Combat
+Password=
+AllowScmdCommands=0
+Port=27888
+LANOnly=1
+Dedicated=1
+UsePunkBuster=0
+
+[SEC2]
+UseSEC2AltAuth=1
+DeadlyFlag=0
+
+[DeathMatch]
+SessionName=F.E.A.R. Combat
+ScoreLimit=500
+TimeLimit=20
+NumRounds=1
+MaxPlayers=8
+UseWeaponRestrictions=0
+Mission0=Worlds\ReleaseMultiplayer\Factory
+Mission1=Worlds\ReleaseMultiplayer\Office

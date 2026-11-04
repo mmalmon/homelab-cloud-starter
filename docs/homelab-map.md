@@ -143,6 +143,7 @@ reverse proxy; nie publikuj bez potrzeby dodatkowych portów aplikacji.
 |---|---|---|
 | Jellyfin | Strumieniowanie filmów, seriali i muzyki z katalogów biblioteki. | [Jellyfin](https://jellyfin.org/), [instalacja w Dockerze](https://jellyfin.org/docs/general/installation/container/), [przykładowy Compose](../containers/jellyfin/compose.yaml) |
 | Minecraft | Osobny serwer gry; obraz kontenera jest projektem społeczności, nie oficjalnym obrazem Mojang/Microsoft. | [Projekt itzg/docker-minecraft-server](https://github.com/itzg/docker-minecraft-server), [Minecraft EULA](https://www.minecraft.net/en-us/eula), [przykładowy Compose](../containers/minecraft/compose.yaml) |
+| F.E.A.R. Combat SEC2 | Serwer gry: lokalny obraz Ubuntu 24.04 i 32-bitowe pliki Linux Dedicated Server. Wymaga przygotowania plików przed wyborem w kreatorze. | [Konfiguracja i źródła](../containers/fear-combat/README.md), [Compose](../containers/fear-combat/compose.yaml); UDP 27888 wewnątrz kontenera, bez HTTP proxy. |
 
 Montuj bibliotekę Jellyfin tylko do odczytu, jeśli aplikacja nie musi niczego
 w niej zmieniać. Utrzymuj zapisywalne konfigurację, cache i bazę Jellyfin
@@ -180,7 +181,7 @@ zależności i cyklu życia, na przykład:
 3. Immich z własną bazą i Valkey;
 4. Home Assistant, broker MQTT i Zigbee2MQTT;
 5. WordPress (albo własna aplikacja Django) z osobną bazą;
-6. Jellyfin i serwer Minecraft;
+6. Jellyfin oraz osobne serwery Minecraft i F.E.A.R. Combat;
 7. współdzielone pliki i narzędzia utrzymaniowe.
 
 Każdy stos powinien mieć własne dane trwałe, sekretne `.env`, ograniczone

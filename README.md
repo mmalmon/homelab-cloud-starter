@@ -129,9 +129,12 @@ sekcję `volumes` swojego Compose. Dane i lokalne sekrety nie trafiają do Git.
 - **Euro-Office** — edycja dokumentów z Nextcloud.
 - **Samba** — udziały plików w zaufanej sieci lokalnej.
 - **Minecraft** — serwer gry; uruchomienie wymaga zaakceptowania EULA.
+- **F.E.A.R. Combat SEC2** — serwer gry w osobnym kontenerze; wymaga
+  lokalnego pełnego pakietu Linux Dedicated Server i aktualizacji SEC2.
+  [Przygotowanie plików, uruchomienie i kopie](containers/fear-combat/README.md).
 
-Nie wszystkie usługi powinny być kierowane przez reverse proxy: Samba, MQTT
-i Minecraft używają innych protokołów, a Home Assistant działa w trybie host.
+Nie wszystkie usługi powinny być kierowane przez reverse proxy: Samba, MQTT,
+Minecraft i F.E.A.R. Combat używają innych protokołów, a Home Assistant działa w trybie host.
 
 **Updater** (aktualizacje kontenerów z akceptacją przez e-mail: jednorazowy
 link i hasło) ma pełny wzór w [containers/updater](containers/updater/README.md)

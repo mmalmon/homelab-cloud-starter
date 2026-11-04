@@ -18,3 +18,7 @@ __pycache__/
 *.sql
 *.sql.gz
 .DS_Store
+
+# Lokalna instalacja F.E.A.R. (binaria, dane graczy i ustawienia)
+containers/fear-combat/server/
+containers/fear-combat/config/ServerOptions.txt

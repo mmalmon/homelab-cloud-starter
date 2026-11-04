@@ -14,7 +14,7 @@ kopiowania bazowego Dockerfile upstream bez potrzeby.
 Stosy z interfejsem HTTP deklarują `VIRTUAL_HOST` i dołączają do wspólnej
 sieci `homelab-proxy`. Kreator przypisuje domenę i dodaje tylko wybrane usługi.
 Django i WordPress są alternatywami: Django buduje własny obraz z `app/`.
-Home Assistant (tryb host), MQTT, SMB i Minecraft nie są routingowane przez
+Home Assistant (tryb host), MQTT, SMB, Minecraft i F.E.A.R. Combat nie są routingowane przez
 HTTP reverse proxy. Panel Zigbee2MQTT jest administracyjny — nie wystawiaj go
 publicznie bez skonfigurowanego uwierzytelniania.
 
@@ -45,3 +45,10 @@ manifestem jest pomijany z ostrzeżeniem, a testy w CI to wykryją.
 
 Kreator sam wypełni tylko wartości sieciowe. Dodatkowe pytania (SMTP, ścieżki
 mediów) wymagają kodu w `wizard/`; pozostałe zmienne uzupełnij w `.env`.
+
+## F.E.A.R. Combat
+
+[Stos fear-combat](fear-combat/README.md) buduje lokalny obraz i wymaga
+własnych plików Linux Dedicated Server/SEC2. Kreator sprawdza ich obecność,
+ustawia adres, port UDP i UID/GID; nie pobiera binariów i nie nadpisuje
+lokalnego ServerOptions.txt. Usługa nie potrzebuje reverse proxy.

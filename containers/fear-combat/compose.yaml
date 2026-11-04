@@ -1,0 +1,48 @@
+name: fear-combat
+
+services:
+  server:
+    build: .
+    platform: linux/amd64
+    restart: unless-stopped
+    init: true
+    user: "${FEAR_UID:-1000}:${FEAR_GID:-1000}"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 256
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+    ports:
+      - "${FEAR_BIND_ADDRESS:-127.0.0.1}:${FEAR_PORT:-27888}:27888/udp"
+    volumes:
+      - type: bind
+        source: ./server/FEAR
+        target: /server/FEAR
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./server/user
+        target: /server/user
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./config/ServerOptions.txt
+        target: /config/ServerOptions.txt
+        read_only: true
+        bind:
+          create_host_path: false
+    environment:
+      FEAR_SERVER_BIN: FEAR/fearserver.bin
+      HOME: /server/user
+      TZ: ${TZ:-Europe/Warsaw}
+    command:
+      - -optionsfile
+      - /config/ServerOptions.txt
+      - -userdirectory
+      - /server/user
+    logging:
+      driver: local

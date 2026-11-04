@@ -453,7 +453,7 @@ def collect_network(
     return network_env, ddns_env, mode
 
 
-def setup_firewall(os_info: dict[str, str], mode: str, selected: set[str], lan_cidr: str) -> None:
+def setup_firewall(os_info: dict[str, str], mode: str, selected: set[str], lan_cidr: str, fear_port: str = "27888") -> None:
     family = distro.family(os_info)
     if family in {"debian", "arch"}:
         if not shutil.which("ufw"):
@@ -479,6 +479,8 @@ def setup_firewall(os_info: dict[str, str], mode: str, selected: set[str], lan_c
         elif "nginx-proxy" in selected and lan_cidr:
             privileged(["ufw", "allow", "from", lan_cidr, "to", "any", "port", "80", "proto", "tcp"])
             privileged(["ufw", "allow", "from", lan_cidr, "to", "any", "port", "443", "proto", "tcp"])
+        if lan_cidr and "fear-combat" in selected:
+            privileged(["ufw", "allow", "from", lan_cidr, "to", "any", "port", fear_port, "proto", "udp"])
         privileged(["ufw", "--force", "enable"])
         return
 
@@ -503,6 +505,9 @@ def setup_firewall(os_info: dict[str, str], mode: str, selected: set[str], lan_c
             for port in ("80", "443"):
                 rule = f'rule family="ipv4" source address="{lan_cidr}" port port="{port}" protocol="tcp" accept'
                 privileged(["firewall-cmd", "--permanent", "--zone", zone, f"--add-rich-rule={rule}"])
+        if lan_cidr and "fear-combat" in selected:
+            rule = f'rule family="ipv4" source address="{lan_cidr}" port port="{fear_port}" protocol="udp" accept'
+            privileged(["firewall-cmd", "--permanent", "--zone", zone, f"--add-rich-rule={rule}"])
         privileged(["firewall-cmd", "--reload"])
 
 
@@ -566,6 +571,39 @@ def create_mqtt_password(docker: list[str], service_dir: Path) -> None:
             f"{service_dir / 'config'}:/mosquitto/config",
             "--entrypoint", entrypoint, "eclipse-mosquitto:2", *args,
         ])
+
+
+def configure_fear(env: dict[str, str]) -> None:
+    """Prepare the local SEC2 deployment without downloading game binaries."""
+    directory = CONTAINERS / "fear-combat"
+    for name in ("fearserver.bin", "libGameServer.so"):
+        path = directory / "server" / "FEAR" / name
+        if not path.is_file() or path.stat().st_size == 0:
+            raise WizardError(
+                f"F.E.A.R.: brak {path}. Przygotuj pełny Linux Dedicated Server "
+                "i SEC2 według containers/fear-combat/README.md, potem ponów kreator."
+            )
+    bind = ask("Adres IPv4 interfejsu LAN dla F.E.A.R.", env.get("FEAR_BIND_ADDRESS", detect_lan_address()))
+    try:
+        address = ipaddress.ip_address(bind)
+        if address.version != 4 or address.is_unspecified or address.is_multicast:
+            raise ValueError("Not a specific IPv4 interface")
+    except ValueError as exc:
+        raise WizardError("F.E.A.R.: podaj konkretny adres IPv4 interfejsu serwera.") from exc
+    port = ask("Port UDP hosta dla F.E.A.R. (wewnątrz zawsze 27888)", env.get("FEAR_PORT", "27888"))
+    if not port.isdigit() or not 1 <= int(port) <= 65535:
+        raise WizardError("F.E.A.R.: port UDP musi być liczbą od 1 do 65535.")
+    uid = env.get("FEAR_UID", str(os.getuid()))
+    gid = env.get("FEAR_GID", str(os.getgid()))
+    if not uid.isdigit() or not gid.isdigit() or int(uid) == 0 or int(gid) == 0:
+        raise WizardError("F.E.A.R.: UID/GID muszą wskazywać nieuprzywilejowane konto.")
+    env.update(FEAR_BIND_ADDRESS=bind, FEAR_PORT=str(int(port)), FEAR_UID=uid, FEAR_GID=gid)
+    (directory / "server" / "user").mkdir(parents=True, exist_ok=True)
+    config = directory / "config" / "ServerOptions.txt"
+    if not config.exists():
+        shutil.copyfile(config.with_name("ServerOptions.example.txt"), config)
+    print("F.E.A.R.: sprawdź uprawnienia server/user dla UID/GID " + uid + ":" + gid)
+    print("Kreator zachowuje ServerOptions.txt; LANOnly i port wewnętrzny ustawiasz w tym pliku.")
 
 
 def configure_minecraft(env: dict[str, str]) -> bool:
@@ -659,6 +697,10 @@ def main(argv: list[str] | None = None) -> int:
                 selected.remove("minecraft")
             else:
                 write_env(CONTAINERS / "minecraft" / ".env", minecraft_env)
+        if "fear-combat" in selected:
+            fear_env = read_env(CONTAINERS / "fear-combat" / ".env")
+            configure_fear(fear_env)
+            write_env(CONTAINERS / "fear-combat" / ".env", fear_env)
         if not selected:
             print("Nie ma nowych usług do wdrożenia.")
             return 0
@@ -687,7 +729,7 @@ def main(argv: list[str] | None = None) -> int:
             except ValueError as exc:
                 raise WizardError("Podaj poprawną podsieć LAN IPv4 w zapisie CIDR.") from exc
         if confirm("Zastosować bazowe reguły firewalla systemu?", True):
-            setup_firewall(os_info, mode, selected, lan_cidr)
+            setup_firewall(os_info, mode, selected, lan_cidr, old_values.get("fear-combat", {}).get("FEAR_PORT", "27888"))
             print("Uwaga: publikowane porty Docker mogą omijać UFW/firewalld. Ogranicz ekspozycję również przez bindowanie i reguły routera/DOCKER-USER.")
 
         if ddns_plan:
