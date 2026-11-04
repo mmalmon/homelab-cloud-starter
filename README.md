@@ -9,10 +9,45 @@ prywatnych domen, adresów IP ani danych dostępowych. **Przed wystawieniem do
 Internetu zapoznaj się z [ograniczeniami kreatora](docs/homelab-wizard.md)
 i [zasadami bezpieczeństwa](docs/security.md).**
 
+## Zacznij tutaj
+
+Jeśli dopiero poznajesz homelab, przeczytaj [artykuł z pierwszym ćwiczeniem Nginx](https://master-homelab.pl/homelab/domowy-homelab-z-dockerem-i-kontenerami-jak-dziala-moj-serwer/).
+Starter jest edukacyjnym szablonem inspirowanym moim serwerem. Nie odtwarza go
+jeden do jednego: artykuł opisuje m.in. Portainer oraz Nginx z Certbotem,
+a kreator instaluje Cockpit do administracji hostem oraz nginx-proxy
+z acme-companion do obsługi domen i publicznych certyfikatów HTTPS.
+Portainer zarządza kontenerami; Cockpit przede wszystkim samym systemem.
+
+Proponowana kolejność nauki:
+
+1. Wykonaj lokalne ćwiczenie Nginx z artykułu i usuń je po zakończeniu.
+2. Na osobnym hoście testowym wybierz w kreatorze **LAN/VPN** i jedną
+   aplikację, np. Nextcloud. Kreator doda jej zależności i reverse proxy.
+   VPN wymaga osobnej konfiguracji — kreator go nie instaluje.
+3. Sprawdź logowanie, zapis pliku oraz [kopię i próbne odtworzenie](docs/backup-and-restore.md).
+4. Dopiero potem rozważ [dostęp publiczny](docs/nginx-proxy.md) i [DDNS](docs/ddns.md).
+
 ## Szybki start
 
-Na nowym hoście z Ubuntu/Debianem, Fedorą, RHEL (Rocky, Alma), Archem lub openSUSE (przygotowanie serwera opisuje
-[poradnik Ubuntu Server + Docker + Cockpit + firewall](docs/ubuntu-docker-cockpit.md)):
+Wykonuj polecenia w terminalu **serwera z Linuksem**, jako zwykły użytkownik
+z możliwością użycia `sudo`. Potrzebujesz Bash, Git i Python 3.10 lub nowszego
+oraz połączenia z internetem. Kreator uruchamia Python przed instalacją Dockera.
+
+Na Ubuntu/Debianie zainstaluj brakujące narzędzia:
+
+```bash
+sudo apt update
+sudo apt install bash git python3 sudo
+python3 --version
+```
+
+Przygotowanie systemu opisuje [poradnik Ubuntu Server, Docker i Cockpit](docs/ubuntu-docker-cockpit.md).
+Kreator rozpoznaje Ubuntu/Debiana, Fedorę, RHEL (Rocky, Alma), Arch i openSUSE.
+**Pełnego wdrożenia na czystym hoście nie potwierdzono testem od początku
+do końca; testy jednostkowe nie zastępują takiej weryfikacji.**
+Pozostałe rodziny opisano wraz z ograniczeniami w [dokumentacji kreatora](docs/homelab-wizard.md).
+
+Pobierz repozytorium, przejrzyj kod oraz ograniczenia i uruchom kreator:
 
 ```bash
 git clone https://github.com/mmalmon/homelab-cloud-starter.git
@@ -29,6 +64,35 @@ właściwą konfiguracją `nginx-proxy`. Kolejność: Docker i Cockpit, tryb sie
 (IP/DDNS), lista usług. Usługi wykrywane są z `containers/*/wizard.json`, więc
 własny kontener dodasz bez zmian w kodzie ([jak](containers/README.md)).
 
+## Sprawdzenie pierwszego uruchomienia
+
+W katalogu repozytorium wykonaj dla wybranej usługi (przykład Nextcloud):
+
+```bash
+cd containers/nextcloud
+sudo docker compose ps
+sudo docker compose logs --tail=100 nextcloud
+```
+
+Pierwszy start może potrwać kilka minut. Otwórz hostname zapisany przy
+konfiguracji usługi. W LAN skonfiguruj lokalny DNS lub wpis w pliku hosts
+na komputerze, z którego otwierasz stronę: nazwa ma wskazywać adres LAN serwera.
+Tryb LAN/VPN nie zamawia publicznego certyfikatu HTTPS. Do pierwszego testu
+użyj danych próbnych. Przy błędzie sprawdź nazwę, adres, logi i stan kontenerów
+przed ponowną instalacją; nie usuwaj katalogu danych.
+
+## Słownik na początek
+
+- **Host** — komputer z Linuksem uruchamiający kontenery.
+- **Stos Compose** — grupa współpracujących usług, np. aplikacja i jej baza.
+- **Reverse proxy** — kieruje żądania do właściwej aplikacji według nazwy.
+- **DNS** — wiąże nazwę, np. `cloud.home.arpa`, z adresem IP.
+- **DDNS** — aktualizuje DNS po zmianie publicznego IP; nie omija CGNAT.
+- **LAN / VPN** — sieć lokalna / prywatne połączenie do zdalnej sieci.
+- **Wolumen lub podłączony katalog** — miejsce przechowywania danych
+  niezależnie od odtwarzanego kontenera.
+- **`.env`** — plik ustawień, często z hasłami; nie publikuj go.
+
 ## Struktura repozytorium
 
 ```text
@@ -41,7 +105,9 @@ tests/                # testy kreatora
 
 Każda aplikacja ma osobny katalog w [`containers/`](containers/). Dockerfile
 jest dodawany tylko, gdy serwis wymaga własnego obrazu (np. Django). Dane
-trwałe są w podkatalogu `data/` każdej usługi i nie trafiają do Git.
+trwałe są domyślnie w podkatalogu `data/` danej usługi; niektóre stosy
+korzystają też z wolumenów Dockera lub konfigurowalnych ścieżek. Sprawdź
+sekcję `volumes` swojego Compose. Dane i lokalne sekrety nie trafiają do Git.
 
 ## Usługi dostępne w kreatorze
 

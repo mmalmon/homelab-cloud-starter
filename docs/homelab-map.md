@@ -1,4 +1,11 @@
-# Pełna mapa homelaba
+# Mapa usług startera i homelaba
+
+Ta mapa opisuje możliwości edukacyjnego startera inspirowanego moim serwerem.
+Nie jest bieżącą inwentaryzacją mojego środowiska. Kontekst i pierwsze ćwiczenie
+znajdziesz w [artykule o moim homelabie](https://master-homelab.pl/homelab/domowy-homelab-z-dockerem-i-kontenerami-jak-dziala-moj-serwer/).
+Starter używa Cockpit oraz nginx-proxy z acme-companion; artykuł opisuje
+również Portainer i wariant Nginx z Certbotem. To różne rozwiązania dla
+administracji oraz obsługi ruchu WWW, a nie lista narzędzi instalowanych razem.
 
 Pełny homelab to nie tylko Nextcloud i Immich. Obejmuje host i pamięć masową,
 sieć wejściową, chmurę, automatykę, multimedia, stronę WWW, udostępnianie

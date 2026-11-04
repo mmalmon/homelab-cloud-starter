@@ -21,7 +21,7 @@ bez sprawdzenia ich wpływu na istniejący system.
    ```bash
    sudo apt update
    sudo apt full-upgrade
-   sudo apt install ca-certificates curl ufw unattended-upgrades
+   sudo apt install ca-certificates curl ufw unattended-upgrades bash git python3 sudo
    sudo reboot
    ```
 
@@ -131,7 +131,7 @@ Dodaj klucz i repozytorium:
 sudo apt update
 sudo apt install ca-certificates curl
 sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \\
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
   -o /etc/apt/keyrings/docker.asc
 sudo chmod a+r /etc/apt/keyrings/docker.asc
 
@@ -226,7 +226,7 @@ skasowaniem lub nadpisaniem, ransomware, kradzieżą, pożarem, awarią hosta an
 uszkodzeniem całej macierzy. Kopię ważnych danych trzymaj na niezależnym
 nośniku lub poza lokalizacją serwera i regularnie testuj odtwarzanie.
 
-Przed wdrożeniem usług z tego repozytorium przejdź do [szybkiego startu](../README.md#szybki-start-nextcloud)
+Przed wdrożeniem usług z tego repozytorium przejdź do [szybkiego startu](../README.md#szybki-start)
 i przeczytaj [zasady bezpieczeństwa](security.md).
 
 ## Źródła
